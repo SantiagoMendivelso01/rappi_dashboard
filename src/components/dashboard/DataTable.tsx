@@ -64,7 +64,7 @@ export function DataTable({ daily }: { daily: DailyAgg[] }) {
     setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
 
   const exportCSV = () => {
-    const header = ["Fecha", "Día", "Tiendas Prom", "Mín", "Máx", "Disponibilidad %", "Órdenes Est", "Incidentes"];
+    const header = ["Fecha", "Día", "Tiendas Prom", "Mín", "Máx", "Disponibilidad %", "Muestras", "Cobertura %", "Incidentes"];
     const rows = sorted.map((d) => [
       d.date,
       dayEs(d.dayOfWeek),
@@ -72,7 +72,8 @@ export function DataTable({ daily }: { daily: DailyAgg[] }) {
       d.min,
       d.max,
       d.availability.toFixed(2),
-      d.orders,
+      d.samples,
+      d.coverage.toFixed(1),
       d.incidents,
     ]);
     downloadCSV(`rappi-dashboard-${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
@@ -149,7 +150,8 @@ export function DataTable({ daily }: { daily: DailyAgg[] }) {
                       {fmtPct(d.availability)}
                     </span>
                   </td>
-                  <td className="py-2.5 px-3 text-right font-mono">{fmtNum(d.orders)}</td>
+                  <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">{fmtNum(d.samples)}</td>
+                  <td className="py-2.5 px-3 text-right font-mono">{fmtPct(d.coverage)}</td>
                   <td className="py-2.5 px-3 text-right font-mono">{fmtNum(d.incidents)}</td>
                 </tr>
               );
