@@ -80,7 +80,7 @@ export function TrendChart({ daily }: { daily: DailyAgg[] }) {
               ...baseOpts.plugins,
               tooltip: {
                 ...baseOpts.plugins.tooltip,
-                callbacks: { label: (ctx) => `${fmtPct(ctx.parsed.y)}` },
+                callbacks: { label: (ctx) => `${fmtPct(Number(ctx.parsed.y ?? 0))}` },
               },
             },
           }}
@@ -198,7 +198,7 @@ export function FranjaChart({ rows, peak }: { rows: Row[]; peak: number }) {
               },
               tooltip: {
                 ...baseOpts.plugins.tooltip,
-                callbacks: { label: (ctx) => `${ctx.dataset.label}: ${fmtPct(ctx.parsed.y)}` },
+                callbacks: { label: (ctx) => `${ctx.dataset.label}: ${fmtPct(Number(ctx.parsed.y ?? 0))}` },
               },
             },
             scales: {
