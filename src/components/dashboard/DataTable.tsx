@@ -12,7 +12,8 @@ const COLUMNS: { key: SortKey; label: string; align?: "right" }[] = [
   { key: "min", label: "Mín", align: "right" },
   { key: "max", label: "Máx", align: "right" },
   { key: "availability", label: "Disponibilidad", align: "right" },
-  { key: "orders", label: "Órdenes est.", align: "right" },
+  { key: "samples", label: "Muestras", align: "right" },
+  { key: "coverage", label: "Cobertura", align: "right" },
   { key: "incidents", label: "Incidentes", align: "right" },
 ];
 
