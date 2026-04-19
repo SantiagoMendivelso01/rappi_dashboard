@@ -46,8 +46,8 @@ export type DailyAgg = {
   valleyHour: number;
   samples: number;
   availability: number; // % vs peak global
-  orders: number; // estimado
-  incidents: number; // huecos detectados
+  coverage: number; // % de muestras reales (no interpoladas)
+  incidents: number; // muestras interpoladas (huecos detectados)
 };
 
 export function aggregateByDay(rows: Row[], peakGlobal: number): DailyAgg[] {
@@ -87,7 +87,7 @@ export function aggregateByDay(rows: Row[], peakGlobal: number): DailyAgg[] {
       valleyHour,
       samples: rs.length,
       availability: peakGlobal > 0 ? (avg / peakGlobal) * 100 : 0,
-      orders: Math.round(avg * 0.42), // estimación heurística
+      coverage: rs.length > 0 ? ((rs.length - incidents) / rs.length) * 100 : 0,
       incidents,
     });
   }
