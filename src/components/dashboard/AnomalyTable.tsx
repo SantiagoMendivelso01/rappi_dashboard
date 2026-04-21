@@ -46,11 +46,11 @@ export function AnomalyTable({ anomalies }: { anomalies: Anomaly[] }) {
     <div className="card-rappi p-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
-          <h3 className="font-bold text-foreground">Top 5 anomalías más bruscas</h3>
+          <h3 className="font-bold text-foreground">Top 5 caídas + Top 5 recuperaciones</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
             {anomalies.length === 0
               ? "Sin anomalías ≥ ±10% en 1 minuto."
-              : `Caídas/subidas ≥ ±10% en 1 min, ordenadas por magnitud.`}
+              : `Las 5 caídas y 5 subidas más bruscas (≥ ±10% en 1 min).`}
           </p>
         </div>
         <div className="flex gap-1.5 flex-wrap">
