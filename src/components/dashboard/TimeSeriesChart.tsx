@@ -112,7 +112,7 @@ export function TimeSeriesChart({ rows, anomalies }: { rows: Row[]; anomalies: A
   const spikeCount = data.filter((d) => d.spike !== null).length;
 
   return (
-    <div className="card-rappi p-5 col-span-1 xl:col-span-2 relative overflow-hidden">
+    <div className="card-rappi p-5 relative overflow-hidden">
       <div
         className="absolute inset-x-0 top-0 h-1"
         style={{
