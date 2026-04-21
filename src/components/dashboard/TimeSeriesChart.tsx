@@ -210,7 +210,7 @@ export function TimeSeriesChart({ rows, anomalies }: { rows: Row[]; anomalies: A
             {visibleAnomalies.map((a, idx) => (
               <ReferenceDot
                 key={idx}
-                x={a._label}
+                x={(a as Anomaly & { _label: string })._label}
                 y={a.value}
                 r={4}
                 fill={ANOMALY_COLOR}
