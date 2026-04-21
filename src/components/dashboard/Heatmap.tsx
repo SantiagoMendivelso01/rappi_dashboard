@@ -111,11 +111,13 @@ export function Heatmap({ rows }: { rows: Row[]; peak?: number }) {
 
           <div className="flex items-center gap-3 mt-4 text-xs text-muted-foreground">
             <span>{fmtNum(min)}</span>
-            <div className="flex h-2 flex-1 rounded-full overflow-hidden">
-              <div className="flex-1" style={{ background: "oklch(0.7 0.12 250)" }} />
-              <div className="flex-1" style={{ background: "oklch(0.75 0.16 70)" }} />
-              <div className="flex-1" style={{ background: "oklch(0.645 0.218 32)" }} />
-            </div>
+            <div
+              className="h-2 flex-1 rounded-full"
+              style={{
+                background:
+                  "linear-gradient(to right, oklch(0.96 0.13 95), oklch(0.78 0.18 60), oklch(0.55 0.22 32))",
+              }}
+            />
             <span>{fmtNum(max)}</span>
           </div>
         </div>
