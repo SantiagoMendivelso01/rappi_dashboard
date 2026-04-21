@@ -37,6 +37,30 @@ export function ChatBot({ rows, fileName }: Props) {
   // Indica si el usuario quiere seguir dictando (para auto-reiniciar ante pausas largas)
   const wantListeningRef = useRef<boolean>(false);
   const finalTranscriptRef = useRef<string>("");
+  // Timer de inactividad: si no se detecta voz en 5s, se detiene automáticamente
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const SILENCE_MS = 5000;
+
+  const clearSilenceTimer = () => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+  };
+
+  const armSilenceTimer = () => {
+    clearSilenceTimer();
+    silenceTimerRef.current = setTimeout(() => {
+      const rec = recognitionRef.current;
+      if (!rec) return;
+      wantListeningRef.current = false;
+      try {
+        rec.stop();
+      } catch {
+        // noop
+      }
+    }, SILENCE_MS);
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
