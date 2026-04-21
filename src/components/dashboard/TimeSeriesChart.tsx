@@ -156,8 +156,12 @@ export function TimeSeriesChart({
           </h3>
           <p className="text-xs text-muted-foreground mt-1 flex items-center gap-3 flex-wrap">
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ background: ANOMALY_COLOR }} />
-              {visibleAnomalies.length} anomalías ±10%
+              <span className="w-2 h-2 rounded-full" style={{ background: OP_CRITICAL_COLOR }} />
+              {visibleOpAnomalies.filter((a) => a.severity === "critical").length} critical
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ background: OP_WARNING_COLOR }} />
+              {visibleOpAnomalies.filter((a) => a.severity === "warning").length} warning
             </span>
             <span className="text-muted-foreground/70">
               · {fmtNum(totalPoints)} muestras{sampled ? ` (vista: ${MAX_POINTS})` : ""}
@@ -248,13 +252,26 @@ export function TimeSeriesChart({
             )}
             {visibleAnomalies.map((a, idx) => (
               <ReferenceDot
-                key={idx}
+                key={`old-${idx}`}
                 x={(a as Anomaly & { _label: string })._label}
                 y={a.value}
-                r={4}
+                r={3}
                 fill={ANOMALY_COLOR}
                 stroke="white"
-                strokeWidth={1.5}
+                strokeWidth={1}
+                fillOpacity={0.35}
+                isFront
+              />
+            ))}
+            {visibleOpAnomalies.map((a, idx) => (
+              <ReferenceDot
+                key={`op-${idx}`}
+                x={a._label}
+                y={a.value}
+                r={5}
+                fill={a.severity === "critical" ? OP_CRITICAL_COLOR : OP_WARNING_COLOR}
+                stroke="white"
+                strokeWidth={1.8}
                 isFront
               />
             ))}
