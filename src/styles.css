@@ -165,6 +165,83 @@
     border-radius: 16px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     border: 1px solid var(--border);
+    transition: transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
+      box-shadow 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
+      border-color 220ms ease;
+  }
+  .card-rappi:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px -12px oklch(0.2 0.02 30 / 0.18);
+    border-color: color-mix(in oklab, var(--primary) 25%, var(--border));
   }
   .metric-num { font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+
+  /* Animaciones suaves del dashboard */
+  @keyframes rappi-fade-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes rappi-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes rappi-pop {
+    0%   { opacity: 0; transform: scale(0.96); }
+    60%  { opacity: 1; transform: scale(1.01); }
+    100% { transform: scale(1); }
+  }
+  @keyframes rappi-shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes rappi-float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-4px); }
+  }
+
+  .animate-fade-up { animation: rappi-fade-up 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .animate-fade-in-soft { animation: rappi-fade-in 600ms ease-out both; }
+  .animate-pop { animation: rappi-pop 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .animate-float { animation: rappi-float 3.5s ease-in-out infinite; }
+
+  /* Stagger por delays para listas/grids */
+  .stagger > * { animation: rappi-fade-up 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .stagger > *:nth-child(1) { animation-delay: 40ms; }
+  .stagger > *:nth-child(2) { animation-delay: 110ms; }
+  .stagger > *:nth-child(3) { animation-delay: 180ms; }
+  .stagger > *:nth-child(4) { animation-delay: 250ms; }
+  .stagger > *:nth-child(5) { animation-delay: 320ms; }
+  .stagger > *:nth-child(6) { animation-delay: 390ms; }
+  .stagger > *:nth-child(7) { animation-delay: 460ms; }
+  .stagger > *:nth-child(8) { animation-delay: 530ms; }
+
+  /* Brillo sutil sobre títulos / acentos */
+  .shimmer-text {
+    background: linear-gradient(
+      90deg,
+      var(--foreground) 0%,
+      var(--foreground) 40%,
+      color-mix(in oklab, var(--primary) 70%, var(--foreground)) 50%,
+      var(--foreground) 60%,
+      var(--foreground) 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: rappi-shimmer 3.2s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-up,
+    .animate-fade-in-soft,
+    .animate-pop,
+    .animate-float,
+    .stagger > *,
+    .shimmer-text {
+      animation: none !important;
+    }
+    .card-rappi { transition: none; }
+    .card-rappi:hover { transform: none; }
+  }
 }
