@@ -46,7 +46,7 @@ export const chatWithDashboard = createServerFn({ method: "POST" })
     if (input.messages.length > 30) {
       throw new Error("Too many messages");
     }
-    if (input.context.length > 30000) {
+    if (input.context.length > 80000) {
       throw new Error("Context too large");
     }
     return input;
