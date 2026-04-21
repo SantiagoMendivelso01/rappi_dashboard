@@ -5,12 +5,20 @@ import { FileDropzone } from "@/components/dashboard/FileDropzone";
 import { Skeleton } from "@/components/dashboard/Skeleton";
 import { KpiCards } from "@/components/dashboard/KpiCards";
 import { FilterBar } from "@/components/dashboard/FilterBar";
-import { TrendChart, WorstMomentsChart, FranjaChart } from "@/components/dashboard/Charts";
+import { TimeSeriesChart } from "@/components/dashboard/TimeSeriesChart";
+import { HourlyAvgChart } from "@/components/dashboard/HourlyAvgChart";
+import { AnomalyTable } from "@/components/dashboard/AnomalyTable";
 import { Heatmap } from "@/components/dashboard/Heatmap";
 import { DataTable } from "@/components/dashboard/DataTable";
-import { AlertsPanel } from "@/components/dashboard/AlertsPanel";
 import { parseCSV, type Row } from "@/lib/csv";
-import { aggregateByDay, applyFilters, emptyFilters, type Filters } from "@/lib/dashboard-data";
+import {
+  aggregateByDay,
+  applyFilters,
+  computeGlobalStats,
+  detectAnomalies,
+  emptyFilters,
+  type Filters,
+} from "@/lib/dashboard-data";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -64,6 +72,8 @@ function Index() {
 
   const filtered = useMemo(() => (rows ? applyFilters(rows, filters) : []), [rows, filters]);
   const daily = useMemo(() => aggregateByDay(filtered, peakGlobal), [filtered, peakGlobal]);
+  const anomalies = useMemo(() => detectAnomalies(filtered), [filtered]);
+  const stats = useMemo(() => computeGlobalStats(filtered, anomalies), [filtered, anomalies]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -93,13 +103,6 @@ function Index() {
 
         {rows && !loading && (
           <div className="space-y-5">
-            <KpiCards
-              daily={daily}
-              totalStores={peakGlobal}
-              dateMin={dateBounds.min}
-              dateMax={dateBounds.max}
-            />
-
             <FilterBar
               filters={filters}
               onChange={setFilters}
@@ -107,14 +110,15 @@ function Index() {
               dateBounds={dateBounds}
             />
 
-            <AlertsPanel daily={daily} />
+            <KpiCards stats={stats} />
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-              <TrendChart daily={daily} />
-              <WorstMomentsChart rows={filtered} />
-              <FranjaChart rows={filtered} peak={peakGlobal} />
+              <TimeSeriesChart rows={filtered} anomalies={anomalies} />
+              <HourlyAvgChart rows={filtered} />
               <Heatmap rows={filtered} peak={peakGlobal} />
             </div>
+
+            <AnomalyTable anomalies={anomalies} />
 
             <DataTable daily={daily} />
 
