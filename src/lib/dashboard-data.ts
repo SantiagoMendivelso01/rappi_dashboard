@@ -162,61 +162,171 @@ export type GlobalStats = {
 };
 
 /**
- * Detección de anomalías por z-score sobre la serie de visibleStores.
- * Una observación es anómala si |z| > threshold (default 2.5).
+ * Detección de anomalías basada en cambios porcentuales y outliers ±2σ
+ * (equivalente al script pandas: pct_change WINDOW=6 + rolling mean/std de 30 muestras).
+ *
+ * - drop:   pct_change_1min < -1%   (caída brusca en 6 muestras)
+ * - spike:  pct_change_1min > +1%   (subida brusca en 6 muestras)
+ * - outlier: valor fuera de la banda ±2σ del rolling mean (30 muestras)
+ *
+ * Cada anomalía se clasifica por severidad según la magnitud del cambio %.
  */
+export type AnomalyKind = "drop" | "spike" | "outlier";
+
 export type Anomaly = {
   timestamp: Date;
   date: string;
   hour: number;
   minute: number;
   value: number;
-  expected: number;
-  delta: number; // diferencia absoluta vs media
-  deltaPct: number; // % vs media
-  z: number;
+  expected: number; // rolling mean local (banda central)
+  delta: number;
+  deltaPct: number; // pct_change_1min (cambio % en 6 muestras)
+  z: number; // desvío estándar respecto a rolling mean
   severity: "critical" | "moderate" | "recovery";
+  kind: AnomalyKind;
 };
 
-export function detectAnomalies(rows: Row[], threshold = 2.5): Anomaly[] {
-  if (rows.length < 10) return [];
+const PCT_WINDOW = 6; // 6 muestras = ~1 min si cada muestra es 10s
+const ROLL_WINDOW = 30; // ~5 min si cada muestra es 10s
+const DROP_THRESHOLD = -1.0;
+const SPIKE_THRESHOLD = 1.0;
+
+function rollingStats(values: number[], window: number) {
+  const n = values.length;
+  const mean = new Array<number | null>(n).fill(null);
+  const std = new Array<number | null>(n).fill(null);
+  const half = Math.floor(window / 2);
+  for (let i = 0; i < n; i++) {
+    const start = Math.max(0, i - half);
+    const end = Math.min(n, i + half + 1);
+    const len = end - start;
+    if (len < Math.min(window, 5)) continue;
+    let s = 0;
+    for (let j = start; j < end; j++) s += values[j];
+    const m = s / len;
+    let v = 0;
+    for (let j = start; j < end; j++) v += (values[j] - m) ** 2;
+    mean[i] = m;
+    std[i] = Math.sqrt(v / len);
+  }
+  return { mean, std };
+}
+
+export function detectAnomalies(rows: Row[]): Anomaly[] {
+  if (rows.length < PCT_WINDOW + 2) return [];
+  const n = rows.length;
   const values = rows.map((r) => r.visibleStores);
-  const mean = values.reduce((s, v) => s + v, 0) / values.length;
-  const variance = values.reduce((s, v) => s + (v - mean) ** 2, 0) / values.length;
-  const std = Math.sqrt(variance) || 1;
+  const { mean, std } = rollingStats(values, ROLL_WINDOW);
 
   const out: Anomaly[] = [];
-  for (const r of rows) {
-    const z = (r.visibleStores - mean) / std;
-    if (Math.abs(z) < threshold) continue;
-    const delta = r.visibleStores - mean;
-    const deltaPct = (delta / mean) * 100;
+  const seen = new Set<number>();
+
+  for (let i = 0; i < n; i++) {
+    const r = rows[i];
+    const v = values[i];
+    const m = mean[i] ?? v;
+    const sd = std[i] ?? 0;
+
+    // 1) pct_change en ventana de 1 min (6 muestras)
+    let pct: number | null = null;
+    if (i >= PCT_WINDOW) {
+      const prev = values[i - PCT_WINDOW];
+      if (prev !== 0) pct = ((v - prev) / prev) * 100;
+    }
+
+    let kind: AnomalyKind | null = null;
+    if (pct !== null && pct < DROP_THRESHOLD) kind = "drop";
+    else if (pct !== null && pct > SPIKE_THRESHOLD) kind = "spike";
+    else if (sd > 0 && (v > m + 2 * sd || v < m - 2 * sd)) kind = "outlier";
+
+    if (!kind) continue;
+    if (seen.has(i)) continue;
+    seen.add(i);
+
+    const deltaPct = pct ?? (m !== 0 ? ((v - m) / m) * 100 : 0);
+    const z = sd > 0 ? (v - m) / sd : 0;
+
     let severity: Anomaly["severity"];
-    if (z <= -3.5) severity = "critical";
-    else if (z < 0) severity = "moderate";
-    else severity = "recovery";
+    const absPct = Math.abs(deltaPct);
+    if (kind === "drop") {
+      severity = absPct >= 3 ? "critical" : "moderate";
+    } else if (kind === "spike") {
+      severity = "recovery";
+    } else {
+      // outlier puro
+      severity = v < m ? "moderate" : "recovery";
+    }
+
     out.push({
       timestamp: r.timestamp,
       date: r.date,
       hour: r.hour,
       minute: r.minute,
-      value: r.visibleStores,
-      expected: mean,
-      delta,
+      value: v,
+      expected: m,
+      delta: v - m,
       deltaPct,
       z,
       severity,
+      kind,
     });
   }
-  // ordenar por severidad (más negativo primero), luego por fecha
+
   out.sort((a, b) => {
     const sevOrder = { critical: 0, moderate: 1, recovery: 2 };
     if (sevOrder[a.severity] !== sevOrder[b.severity]) {
       return sevOrder[a.severity] - sevOrder[b.severity];
     }
-    return a.z - b.z;
+    return a.deltaPct - b.deltaPct;
   });
   return out;
+}
+
+/**
+ * Largest-Triangle-Three-Buckets downsampling.
+ * Reduce un array de puntos {x,y} preservando la forma visual de la serie.
+ */
+export function lttb<T extends { x: number; y: number }>(data: T[], threshold: number): T[] {
+  const n = data.length;
+  if (threshold >= n || threshold <= 2) return data;
+  const sampled: T[] = [];
+  const every = (n - 2) / (threshold - 2);
+  let a = 0;
+  sampled.push(data[a]);
+  for (let i = 0; i < threshold - 2; i++) {
+    let avgX = 0;
+    let avgY = 0;
+    const rangeStart = Math.floor((i + 1) * every) + 1;
+    const rangeEnd = Math.min(Math.floor((i + 2) * every) + 1, n);
+    const rangeLen = rangeEnd - rangeStart;
+    for (let j = rangeStart; j < rangeEnd; j++) {
+      avgX += data[j].x;
+      avgY += data[j].y;
+    }
+    avgX /= rangeLen || 1;
+    avgY /= rangeLen || 1;
+
+    const rangeOffs = Math.floor(i * every) + 1;
+    const rangeTo = Math.floor((i + 1) * every) + 1;
+    const pointAX = data[a].x;
+    const pointAY = data[a].y;
+    let maxArea = -1;
+    let nextA = rangeOffs;
+    for (let j = rangeOffs; j < rangeTo; j++) {
+      const area = Math.abs(
+        (pointAX - avgX) * (data[j].y - pointAY) - (pointAX - data[j].x) * (avgY - pointAY)
+      );
+      if (area > maxArea) {
+        maxArea = area;
+        nextA = j;
+      }
+    }
+    sampled.push(data[nextA]);
+    a = nextA;
+  }
+  sampled.push(data[n - 1]);
+  return sampled;
 }
 
 export function computeGlobalStats(rows: Row[], anomalies: Anomaly[]): GlobalStats {
