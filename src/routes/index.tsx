@@ -112,12 +112,11 @@ function Index() {
 
             <KpiCards stats={stats} />
 
+            <TimeSeriesChart rows={filtered} anomalies={anomalies} />
+
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-              <TimeSeriesChart rows={filtered} anomalies={anomalies} />
               <HourlyAvgChart rows={filtered} />
-              <div className="col-span-1 xl:col-span-2">
-                <Heatmap rows={filtered} peak={peakGlobal} />
-              </div>
+              <Heatmap rows={filtered} peak={peakGlobal} />
             </div>
 
             <AnomalyTable anomalies={anomalies} />
