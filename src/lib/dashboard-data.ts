@@ -361,6 +361,66 @@ export function computeGlobalStats(rows: Row[], anomalies: Anomaly[]): GlobalSta
   return { avg, max, maxAt, min, minAt, trend7d, anomaliesCount: anomalies.length };
 }
 
+// =====================================================================
+// ANOMALÍAS OPERACIONALES (ventana 10h-21h, caída >12% vs 60s atrás)
+// =====================================================================
+
+export type OpAnomalySeverity = "critical" | "warning";
+
+export type OpAnomaly = {
+  timestamp: Date;
+  date: string;
+  hour: number;
+  minute: number;
+  second: number;
+  value: number;
+  prevValue: number;
+  dropPct: number; // negativo (ej. -15.3 = caída de 15.3%)
+  severity: OpAnomalySeverity;
+};
+
+/** Ventana operacional inclusive: [10h, 21h] */
+const OP_HOUR_START = 10;
+const OP_HOUR_END = 21;
+/** 6 puntos atrás ≈ 60s si cada muestra es de 10s */
+const OP_LOOKBACK = 6;
+/** Umbral mínimo de caída para considerar anomalía */
+const OP_DROP_MIN = 12;
+const OP_DROP_CRITICAL = 20;
+
+/**
+ * Detecta anomalías operacionales:
+ *  - Solo dentro de la ventana 10h-21h (inclusive).
+ *  - Caída > 12% respecto al valor de 60s atrás (6 puntos).
+ *  - Severidad: critical (>20%) | warning (12%-20%).
+ */
+export function detectOpAnomalies(rows: Row[]): OpAnomaly[] {
+  if (rows.length <= OP_LOOKBACK) return [];
+  const out: OpAnomaly[] = [];
+  for (let i = OP_LOOKBACK; i < rows.length; i++) {
+    const r = rows[i];
+    if (r.hour < OP_HOUR_START || r.hour > OP_HOUR_END) continue;
+    const prev = rows[i - OP_LOOKBACK];
+    if (prev.visibleStores <= 0) continue;
+    const dropPct = ((r.visibleStores - prev.visibleStores) / prev.visibleStores) * 100;
+    if (dropPct >= -OP_DROP_MIN) continue; // no es caída suficiente
+    const absDrop = Math.abs(dropPct);
+    const severity: OpAnomalySeverity = absDrop > OP_DROP_CRITICAL ? "critical" : "warning";
+    out.push({
+      timestamp: r.timestamp,
+      date: r.date,
+      hour: r.hour,
+      minute: r.minute,
+      second: r.second,
+      value: r.visibleStores,
+      prevValue: prev.visibleStores,
+      dropPct,
+      severity,
+    });
+  }
+  return out;
+}
+
 /** Promedio de visibleStores por hora del día (0-23). */
 export function hourlyAverage(rows: Row[]): { hour: number; avg: number; samples: number }[] {
   const sums = Array(24).fill(0);
