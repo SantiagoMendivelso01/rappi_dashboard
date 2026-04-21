@@ -61,7 +61,7 @@ export function KpiCards({ stats }: Props) {
     {
       label: "Anomalías detectadas",
       value: fmtNum(stats.anomaliesCount, 0),
-      sub: "z-score > 2.5",
+      sub: "Δ ±1% en 1 min · ±2σ rolling",
       icon: AlertTriangle,
       accent: stats.anomaliesCount > 0 ? "text-[oklch(0.58_0.16_70)]" : "text-foreground",
       badge: stats.anomaliesCount > 0 ? "Revisar tabla" : "Sin alertas",
