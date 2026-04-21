@@ -33,10 +33,14 @@ export const Route = createRootRoute({
       { name: "description", content: "Visualiza la disponibilidad histórica de tiendas en Rappi a partir de tu CSV." },
       { name: "author", content: "Rappi" },
       { property: "og:title", content: "Rappi · Store Availability Dashboard" },
-      { property: "og:description", content: "Dashboard interactivo de disponibilidad de tiendas Rappi." },
+      { property: "og:description", content: "Visualiza la disponibilidad histórica de tiendas en Rappi a partir de tu CSV." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Rappi · Store Availability Dashboard" },
+      { name: "twitter:description", content: "Visualiza la disponibilidad histórica de tiendas en Rappi a partir de tu CSV." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/58474f76-3b93-4451-b865-077fbeda91c9/id-preview-d76fcf57--273db0f1-d5b2-4539-a54b-1a3a7ba3f41a.lovable.app-1776792128510.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/58474f76-3b93-4451-b865-077fbeda91c9/id-preview-d76fcf57--273db0f1-d5b2-4539-a54b-1a3a7ba3f41a.lovable.app-1776792128510.png" },
     ],
     links: [
       {
