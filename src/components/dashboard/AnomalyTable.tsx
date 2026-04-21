@@ -91,12 +91,12 @@ export function AnomalyTable({ anomalies }: { anomalies: Anomaly[] }) {
             <thead>
               <tr className="text-left text-xs text-muted-foreground border-b border-border">
                 <th className="pb-2 pr-4 font-semibold">Severidad</th>
+                <th className="pb-2 pr-4 font-semibold">Tipo</th>
                 <th className="pb-2 pr-4 font-semibold">Timestamp</th>
                 <th className="pb-2 pr-4 font-semibold text-right">Valor</th>
                 <th className="pb-2 pr-4 font-semibold text-right">Esperado</th>
                 <th className="pb-2 pr-4 font-semibold text-right">Δ</th>
-                <th className="pb-2 pr-4 font-semibold text-right">Δ %</th>
-                <th className="pb-2 font-semibold text-right">z-score</th>
+                <th className="pb-2 font-semibold text-right">Δ % (1 min)</th>
               </tr>
             </thead>
             <tbody>
@@ -106,7 +106,9 @@ export function AnomalyTable({ anomalies }: { anomalies: Anomaly[] }) {
                 const ts = a.timestamp;
                 const tsStr = `${a.date} ${String(ts.getHours()).padStart(2, "0")}:${String(
                   ts.getMinutes()
-                ).padStart(2, "0")}`;
+                ).padStart(2, "0")}:${String(ts.getSeconds()).padStart(2, "0")}`;
+                const kindLabel =
+                  a.kind === "drop" ? "Caída" : a.kind === "spike" ? "Subida" : "Outlier ±2σ";
                 return (
                   <tr
                     key={i}
@@ -119,6 +121,9 @@ export function AnomalyTable({ anomalies }: { anomalies: Anomaly[] }) {
                         <Icon className="w-3 h-3" />
                         {cfg.label}
                       </span>
+                    </td>
+                    <td className="py-2.5 pr-4 text-xs text-muted-foreground font-medium">
+                      {kindLabel}
                     </td>
                     <td className="py-2.5 pr-4 font-mono text-xs">{tsStr}</td>
                     <td className="py-2.5 pr-4 text-right font-semibold tabular-nums">
@@ -136,15 +141,12 @@ export function AnomalyTable({ anomalies }: { anomalies: Anomaly[] }) {
                       {fmtNum(a.delta, 0)}
                     </td>
                     <td
-                      className={`py-2.5 pr-4 text-right tabular-nums font-semibold ${
+                      className={`py-2.5 text-right tabular-nums font-semibold ${
                         a.deltaPct < 0 ? "text-destructive" : "text-[oklch(0.55_0.17_145)]"
                       }`}
                     >
                       {a.deltaPct > 0 ? "+" : ""}
-                      {a.deltaPct.toFixed(1)}%
-                    </td>
-                    <td className="py-2.5 text-right tabular-nums text-muted-foreground">
-                      {a.z.toFixed(2)}
+                      {a.deltaPct.toFixed(2)}%
                     </td>
                   </tr>
                 );
