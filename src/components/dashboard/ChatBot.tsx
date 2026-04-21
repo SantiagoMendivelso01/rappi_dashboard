@@ -232,8 +232,8 @@ export function ChatBot({ rows, fileName }: Props) {
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-background">
             {messages.length === 0 && (
               <div className="text-center pt-4">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
-                  <Sparkles className="w-7 h-7 text-primary" />
+                <div className="w-20 h-20 mx-auto rounded-full bg-primary/10 overflow-hidden flex items-center justify-center mb-3 ring-4 ring-primary/15">
+                  <img src={rappiChatbotIcon} alt="Rappi AI" className="w-full h-full object-cover" />
                 </div>
                 <p className="font-semibold text-foreground">Hola 👋</p>
                 <p className="text-sm text-muted-foreground mt-1 mb-4">
