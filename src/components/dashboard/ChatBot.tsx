@@ -139,6 +139,7 @@ export function ChatBot({ rows, fileName }: Props) {
       };
       setVoiceError(map[code] || `Error de voz: ${code}`);
       wantListeningRef.current = false;
+      clearSilenceTimer();
       setListening(false);
     };
 
@@ -152,12 +153,14 @@ export function ChatBot({ rows, fileName }: Props) {
           // si falla, caemos a apagado
         }
       }
+      clearSilenceTimer();
       setListening(false);
     };
 
     recognitionRef.current = rec;
     return () => {
       wantListeningRef.current = false;
+      clearSilenceTimer();
       try {
         rec.abort();
       } catch {
@@ -171,6 +174,7 @@ export function ChatBot({ rows, fileName }: Props) {
     if (!rec) return;
     if (listening) {
       wantListeningRef.current = false;
+      clearSilenceTimer();
       try {
         rec.stop();
       } catch {
@@ -185,6 +189,8 @@ export function ChatBot({ rows, fileName }: Props) {
     try {
       rec.start();
       setListening(true);
+      // Arrancamos el timer de silencio: si no llega audio en 5s, se apaga.
+      armSilenceTimer();
     } catch {
       // ya estaba activa
     }
