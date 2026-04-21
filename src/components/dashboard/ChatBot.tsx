@@ -34,6 +34,9 @@ export function ChatBot({ rows, fileName }: Props) {
   const recognitionRef = useRef<any>(null);
   const baseInputRef = useRef<string>("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Indica si el usuario quiere seguir dictando (para auto-reiniciar ante pausas largas)
+  const wantListeningRef = useRef<boolean>(false);
+  const finalTranscriptRef = useRef<string>("");
 
   useEffect(() => {
     if (scrollRef.current) {
