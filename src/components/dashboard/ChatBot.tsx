@@ -37,6 +37,30 @@ export function ChatBot({ rows, fileName }: Props) {
   // Indica si el usuario quiere seguir dictando (para auto-reiniciar ante pausas largas)
   const wantListeningRef = useRef<boolean>(false);
   const finalTranscriptRef = useRef<string>("");
+  // Timer de inactividad: si no se detecta voz en 5s, se detiene automáticamente
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const SILENCE_MS = 5000;
+
+  const clearSilenceTimer = () => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+  };
+
+  const armSilenceTimer = () => {
+    clearSilenceTimer();
+    silenceTimerRef.current = setTimeout(() => {
+      const rec = recognitionRef.current;
+      if (!rec) return;
+      wantListeningRef.current = false;
+      try {
+        rec.stop();
+      } catch {
+        // noop
+      }
+    }, SILENCE_MS);
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -87,12 +111,18 @@ export function ChatBot({ rows, fileName }: Props) {
           interim += txt;
         }
       }
+      // Hubo actividad de voz: reiniciamos el timer de silencio
+      armSilenceTimer();
       const base = baseInputRef.current;
       const finals = finalTranscriptRef.current;
       const sep1 = base && finals && !base.endsWith(" ") ? " " : "";
       const sep2 = (base + sep1 + finals) && interim ? " " : "";
       setInput((base + sep1 + finals + sep2 + interim).trimStart());
     };
+
+    // Algunos navegadores emiten onspeechstart / onsoundstart cuando detectan audio
+    rec.onspeechstart = () => armSilenceTimer();
+    rec.onsoundstart = () => armSilenceTimer();
 
     rec.onerror = (e: any) => {
       const code = e?.error || "error";
@@ -109,6 +139,7 @@ export function ChatBot({ rows, fileName }: Props) {
       };
       setVoiceError(map[code] || `Error de voz: ${code}`);
       wantListeningRef.current = false;
+      clearSilenceTimer();
       setListening(false);
     };
 
@@ -122,12 +153,14 @@ export function ChatBot({ rows, fileName }: Props) {
           // si falla, caemos a apagado
         }
       }
+      clearSilenceTimer();
       setListening(false);
     };
 
     recognitionRef.current = rec;
     return () => {
       wantListeningRef.current = false;
+      clearSilenceTimer();
       try {
         rec.abort();
       } catch {
@@ -141,6 +174,7 @@ export function ChatBot({ rows, fileName }: Props) {
     if (!rec) return;
     if (listening) {
       wantListeningRef.current = false;
+      clearSilenceTimer();
       try {
         rec.stop();
       } catch {
@@ -155,6 +189,8 @@ export function ChatBot({ rows, fileName }: Props) {
     try {
       rec.start();
       setListening(true);
+      // Arrancamos el timer de silencio: si no llega audio en 5s, se apaga.
+      armSilenceTimer();
     } catch {
       // ya estaba activa
     }
