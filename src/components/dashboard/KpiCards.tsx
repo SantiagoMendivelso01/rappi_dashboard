@@ -4,6 +4,8 @@ import { TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle, AlertTriangle
 
 type Props = {
   stats: GlobalStats;
+  opAnomaliesCount?: number;
+  opCriticalCount?: number;
 };
 
 const fmtTimestamp = (d: Date | null) => {
@@ -14,7 +16,8 @@ const fmtTimestamp = (d: Date | null) => {
   return `${date} ${hh}:${mm}`;
 };
 
-export function KpiCards({ stats }: Props) {
+export function KpiCards({ stats, opAnomaliesCount, opCriticalCount = 0 }: Props) {
+  const opCount = opAnomaliesCount ?? stats.anomaliesCount;
   const trendUp = stats.trend7d >= 0;
   const trendClass = trendUp ? "text-[oklch(0.55_0.17_145)]" : "text-destructive";
   const trendBg = trendUp
@@ -59,16 +62,31 @@ export function KpiCards({ stats }: Props) {
       badgeClass: trendBg,
     },
     {
-      label: "Anomalías detectadas",
-      value: fmtNum(stats.anomaliesCount, 0),
-      sub: "Δ ±1% en 1 min · ±2σ rolling",
+      label: "Anomalías operacionales",
+      value: fmtNum(opCount, 0),
+      sub:
+        opCount > 0
+          ? `${opCriticalCount} critical · ventana 10h–21h`
+          : "Caída >12% en 60s · 10h–21h",
       icon: AlertTriangle,
-      accent: stats.anomaliesCount > 0 ? "text-[oklch(0.58_0.16_70)]" : "text-foreground",
-      badge: stats.anomaliesCount > 0 ? "Revisar tabla" : "Sin alertas",
+      accent:
+        opCriticalCount > 0
+          ? "text-destructive"
+          : opCount > 0
+            ? "text-[oklch(0.58_0.16_70)]"
+            : "text-foreground",
+      badge:
+        opCriticalCount > 0
+          ? `${opCriticalCount} críticas`
+          : opCount > 0
+            ? "Solo warnings"
+            : "Sin alertas",
       badgeClass:
-        stats.anomaliesCount > 0
-          ? "bg-[oklch(0.78_0.16_70_/_0.15)] text-[oklch(0.58_0.16_70)]"
-          : "bg-muted text-muted-foreground",
+        opCriticalCount > 0
+          ? "bg-destructive/10 text-destructive"
+          : opCount > 0
+            ? "bg-[oklch(0.78_0.16_70_/_0.15)] text-[oklch(0.58_0.16_70)]"
+            : "bg-muted text-muted-foreground",
     },
   ];
 

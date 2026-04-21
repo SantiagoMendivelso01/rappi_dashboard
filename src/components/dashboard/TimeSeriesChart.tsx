@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import type { Row } from "@/lib/csv";
 import { fmtNum } from "@/lib/csv";
-import { lttb, type Anomaly } from "@/lib/dashboard-data";
+import { lttb, type Anomaly, type OpAnomaly } from "@/lib/dashboard-data";
 import { Activity } from "lucide-react";
 
 type Zoom = "1h" | "1d" | "full";
@@ -25,17 +25,28 @@ type Point = {
 const MAX_POINTS = 600;
 const SERIES_COLOR = "oklch(0.645 0.218 32)"; // naranja Rappi
 const ANOMALY_COLOR = "oklch(0.55 0.22 25)"; // rojo-naranja oscuro neutral
+const OP_CRITICAL_COLOR = "oklch(0.55 0.24 25)"; // rojo intenso
+const OP_WARNING_COLOR = "oklch(0.72 0.18 70)"; // ámbar
 
-export function TimeSeriesChart({ rows, anomalies }: { rows: Row[]; anomalies: Anomaly[] }) {
+export function TimeSeriesChart({
+  rows,
+  anomalies,
+  opAnomalies = [],
+}: {
+  rows: Row[];
+  anomalies: Anomaly[];
+  opAnomalies?: OpAnomaly[];
+}) {
   const [zoom, setZoom] = useState<Zoom>("full");
 
-  const { data, totalPoints, sampled, visibleAnomalies, lastLabel } = useMemo(() => {
+  const { data, totalPoints, sampled, visibleAnomalies, visibleOpAnomalies, lastLabel } = useMemo(() => {
     if (rows.length === 0) {
       return {
         data: [] as Point[],
         totalPoints: 0,
         sampled: false,
         visibleAnomalies: [] as Anomaly[],
+        visibleOpAnomalies: [] as (OpAnomaly & { _label: string })[],
         lastLabel: "",
       };
     }
@@ -98,14 +109,42 @@ export function TimeSeriesChart({ rows, anomalies }: { rows: Row[]; anomalies: A
       .map((a) => ({ ...a, _label: labelByAnomalyTs.get(a.timestamp.getTime()) }))
       .filter((a): a is Anomaly & { _label: string } => Boolean(a._label));
 
+    // op anomalies: filtrar y mapear igual
+    const visOps = opAnomalies.filter((a) => {
+      const t = a.timestamp.getTime();
+      return t >= firstTs && t <= lastTs;
+    });
+    const opLabelByTs = new Map<number, string>();
+    if (points.length > 0) {
+      for (const a of visOps) {
+        const t = a.timestamp.getTime();
+        let lo = 0;
+        let hi = points.length - 1;
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1;
+          if (points[mid].ts < t) lo = mid + 1;
+          else hi = mid;
+        }
+        const cand = points[lo];
+        const prev = lo > 0 ? points[lo - 1] : cand;
+        const nearest =
+          Math.abs(cand.ts - t) < Math.abs(prev.ts - t) ? cand : prev;
+        opLabelByTs.set(t, nearest.label);
+      }
+    }
+    const enrichedOps = visOps
+      .map((a) => ({ ...a, _label: opLabelByTs.get(a.timestamp.getTime()) }))
+      .filter((a): a is OpAnomaly & { _label: string } => Boolean(a._label));
+
     return {
       data: points,
       totalPoints: sliced.length,
       sampled: wasSampled,
       visibleAnomalies: enriched,
+      visibleOpAnomalies: enrichedOps,
       lastLabel: points[points.length - 1]?.label ?? "",
     };
-  }, [rows, anomalies, zoom]);
+  }, [rows, anomalies, opAnomalies, zoom]);
 
   return (
     <div className="card-rappi p-0 relative overflow-hidden">
@@ -117,8 +156,12 @@ export function TimeSeriesChart({ rows, anomalies }: { rows: Row[]; anomalies: A
           </h3>
           <p className="text-xs text-muted-foreground mt-1 flex items-center gap-3 flex-wrap">
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ background: ANOMALY_COLOR }} />
-              {visibleAnomalies.length} anomalías ±10%
+              <span className="w-2 h-2 rounded-full" style={{ background: OP_CRITICAL_COLOR }} />
+              {visibleOpAnomalies.filter((a) => a.severity === "critical").length} critical
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ background: OP_WARNING_COLOR }} />
+              {visibleOpAnomalies.filter((a) => a.severity === "warning").length} warning
             </span>
             <span className="text-muted-foreground/70">
               · {fmtNum(totalPoints)} muestras{sampled ? ` (vista: ${MAX_POINTS})` : ""}
@@ -209,13 +252,26 @@ export function TimeSeriesChart({ rows, anomalies }: { rows: Row[]; anomalies: A
             )}
             {visibleAnomalies.map((a, idx) => (
               <ReferenceDot
-                key={idx}
+                key={`old-${idx}`}
                 x={(a as Anomaly & { _label: string })._label}
                 y={a.value}
-                r={4}
+                r={3}
                 fill={ANOMALY_COLOR}
                 stroke="white"
-                strokeWidth={1.5}
+                strokeWidth={1}
+                fillOpacity={0.35}
+                isFront
+              />
+            ))}
+            {visibleOpAnomalies.map((a, idx) => (
+              <ReferenceDot
+                key={`op-${idx}`}
+                x={a._label}
+                y={a.value}
+                r={5}
+                fill={a.severity === "critical" ? OP_CRITICAL_COLOR : OP_WARNING_COLOR}
+                stroke="white"
+                strokeWidth={1.8}
                 isFront
               />
             ))}

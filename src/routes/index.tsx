@@ -8,6 +8,7 @@ import { FilterBar } from "@/components/dashboard/FilterBar";
 import { TimeSeriesChart } from "@/components/dashboard/TimeSeriesChart";
 import { HourlyAvgChart } from "@/components/dashboard/HourlyAvgChart";
 import { AnomalyTable } from "@/components/dashboard/AnomalyTable";
+import { OpAnomalyTable } from "@/components/dashboard/OpAnomalyTable";
 import { Heatmap } from "@/components/dashboard/Heatmap";
 import { DataTable } from "@/components/dashboard/DataTable";
 import { ReportButton } from "@/components/dashboard/ReportButton";
@@ -18,6 +19,7 @@ import {
   applyFilters,
   computeGlobalStats,
   detectAnomalies,
+  detectOpAnomalies,
   emptyFilters,
   type Filters,
 } from "@/lib/dashboard-data";
@@ -75,6 +77,11 @@ function Index() {
   const filtered = useMemo(() => (rows ? applyFilters(rows, filters) : []), [rows, filters]);
   const daily = useMemo(() => aggregateByDay(filtered, peakGlobal), [filtered, peakGlobal]);
   const anomalies = useMemo(() => detectAnomalies(filtered), [filtered]);
+  const opAnomalies = useMemo(() => detectOpAnomalies(filtered), [filtered]);
+  const opCriticalCount = useMemo(
+    () => opAnomalies.filter((a) => a.severity === "critical").length,
+    [opAnomalies]
+  );
   const stats = useMemo(() => computeGlobalStats(filtered, anomalies), [filtered, anomalies]);
 
   return (
@@ -122,14 +129,20 @@ function Index() {
               />
             </div>
 
-            <KpiCards stats={stats} />
+            <KpiCards
+              stats={stats}
+              opAnomaliesCount={opAnomalies.length}
+              opCriticalCount={opCriticalCount}
+            />
 
-            <TimeSeriesChart rows={filtered} anomalies={anomalies} />
+            <TimeSeriesChart rows={filtered} anomalies={anomalies} opAnomalies={opAnomalies} />
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
               <HourlyAvgChart rows={filtered} />
               <Heatmap rows={filtered} peak={peakGlobal} />
             </div>
+
+            <OpAnomalyTable anomalies={opAnomalies} />
 
             <AnomalyTable anomalies={anomalies} />
 
