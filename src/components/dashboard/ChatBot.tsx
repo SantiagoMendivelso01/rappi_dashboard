@@ -306,6 +306,7 @@ export function ChatBot({ rows, fileName }: Props) {
             )}
             <div className="flex items-end gap-2">
               <textarea
+                ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -317,7 +318,8 @@ export function ChatBot({ rows, fileName }: Props) {
                 placeholder={listening ? "Escuchando…" : "Escribe o dicta tu pregunta…"}
                 rows={1}
                 disabled={loading}
-                className="flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary max-h-32"
+                style={{ height: "40px", transition: "height 120ms ease-out" }}
+                className="flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary leading-relaxed"
               />
               {voiceSupported && (
                 <button
