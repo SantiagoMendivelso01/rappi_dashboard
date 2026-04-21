@@ -13,21 +13,27 @@ import type { Row } from "@/lib/csv";
 import { fmtNum, franja } from "@/lib/csv";
 import { hourlyAverage } from "@/lib/dashboard-data";
 
-const PEAK_COLOR = "oklch(0.7 0.18 50)"; // naranja
-const VALLEY_COLOR = "oklch(0.55 0.15 250)"; // azul
-const MID_COLOR = "oklch(0.78 0.04 286)"; // neutro
+const PEAK_COLOR = "oklch(0.645 0.218 32)"; // naranja Rappi (primary)
+const VALLEY_COLOR = "oklch(0.6 0.13 240)"; // azul medio
+const MID_COLOR = "oklch(0.85 0.02 50)"; // beige neutro tirando a naranja claro
+const EMPTY_COLOR = "oklch(0.95 0.003 286)";
 
 export function HourlyAvgChart({ rows }: { rows: Row[] }) {
   const data = useMemo(() => {
     const hourly = hourlyAverage(rows);
     if (hourly.every((h) => h.avg === 0)) return [];
-    const max = Math.max(...hourly.map((h) => h.avg));
-    const min = Math.min(...hourly.filter((h) => h.samples > 0).map((h) => h.avg));
+    const withSamples = hourly.filter((h) => h.samples > 0);
+    const max = Math.max(...withSamples.map((h) => h.avg));
+    const min = Math.min(...withSamples.map((h) => h.avg));
+    const range = max - min || 1;
     return hourly.map((h) => {
       let color = MID_COLOR;
-      if (h.samples === 0) color = "oklch(0.95 0.003 286)";
-      else if (h.avg >= max * 0.92) color = PEAK_COLOR;
-      else if (h.avg <= min * 1.08 && h.avg > 0) color = VALLEY_COLOR;
+      if (h.samples === 0) color = EMPTY_COLOR;
+      else {
+        const t = (h.avg - min) / range; // 0..1
+        if (t >= 0.85) color = PEAK_COLOR;
+        else if (t <= 0.15) color = VALLEY_COLOR;
+      }
       return {
         hour: `${String(h.hour).padStart(2, "0")}h`,
         avg: Math.round(h.avg),

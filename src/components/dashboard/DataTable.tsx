@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { ArrowUpDown, Download, Search } from "lucide-react";
-import { availabilityClass, type DailyAgg } from "@/lib/dashboard-data";
-import { dayEs, downloadCSV, fmtNum, fmtPct } from "@/lib/csv";
+import { type DailyAgg } from "@/lib/dashboard-data";
+import { dayEs, downloadCSV, fmtNum } from "@/lib/csv";
 
 type SortKey = keyof DailyAgg;
 
@@ -11,19 +11,12 @@ const COLUMNS: { key: SortKey; label: string; align?: "right" }[] = [
   { key: "avg", label: "Tiendas (prom)", align: "right" },
   { key: "min", label: "Mín", align: "right" },
   { key: "max", label: "Máx", align: "right" },
-  { key: "availability", label: "Disponibilidad", align: "right" },
+  { key: "peakHour", label: "Hora pico", align: "right" },
+  { key: "valleyHour", label: "Hora valle", align: "right" },
   { key: "samples", label: "Muestras", align: "right" },
-  { key: "coverage", label: "Cobertura", align: "right" },
-  { key: "incidents", label: "Incidentes", align: "right" },
 ];
 
 const PAGE_SIZE = 15;
-
-const badge = {
-  ok: "bg-[oklch(0.72_0.18_145_/_0.15)] text-[oklch(0.45_0.17_145)]",
-  warn: "bg-[oklch(0.78_0.16_70_/_0.18)] text-[oklch(0.5_0.16_70)]",
-  bad: "bg-destructive/15 text-destructive",
-};
 
 export function DataTable({ daily }: { daily: DailyAgg[] }) {
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({
@@ -64,20 +57,21 @@ export function DataTable({ daily }: { daily: DailyAgg[] }) {
     setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
 
   const exportCSV = () => {
-    const header = ["Fecha", "Día", "Tiendas Prom", "Mín", "Máx", "Disponibilidad %", "Muestras", "Cobertura %", "Incidentes"];
+    const header = ["Fecha", "Día", "Tiendas Prom", "Mín", "Máx", "Hora pico", "Hora valle", "Muestras"];
     const rows = sorted.map((d) => [
       d.date,
       dayEs(d.dayOfWeek),
       d.avg.toFixed(1),
       d.min,
       d.max,
-      d.availability.toFixed(2),
+      d.peakHour,
+      d.valleyHour,
       d.samples,
-      d.coverage.toFixed(1),
-      d.incidents,
     ]);
     downloadCSV(`rappi-dashboard-${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
   };
+
+  const fmtHour = (h: number) => `${String(h).padStart(2, "0")}:00`;
 
   return (
     <div className="card-rappi p-5">
@@ -132,30 +126,34 @@ export function DataTable({ daily }: { daily: DailyAgg[] }) {
             </tr>
           </thead>
           <tbody>
-            {pageRows.map((d) => {
-              const cls = availabilityClass(d.availability);
-              return (
-                <tr key={d.date} className="border-b border-border/60 hover:bg-muted/40">
-                  <td className="py-2.5 px-3 font-medium">{d.date}</td>
-                  <td className="py-2.5 px-3 text-muted-foreground">{dayEs(d.dayOfWeek)}</td>
-                  <td className="py-2.5 px-3 text-right font-mono">{fmtNum(Math.round(d.avg))}</td>
-                  <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">
-                    {fmtNum(d.min)}
-                  </td>
-                  <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">
-                    {fmtNum(d.max)}
-                  </td>
-                  <td className="py-2.5 px-3 text-right">
-                    <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${badge[cls]}`}>
-                      {fmtPct(d.availability)}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">{fmtNum(d.samples)}</td>
-                  <td className="py-2.5 px-3 text-right font-mono">{fmtPct(d.coverage)}</td>
-                  <td className="py-2.5 px-3 text-right font-mono">{fmtNum(d.incidents)}</td>
-                </tr>
-              );
-            })}
+            {pageRows.map((d) => (
+              <tr key={d.date} className="border-b border-border/60 hover:bg-muted/40">
+                <td className="py-2.5 px-3 font-medium">{d.date}</td>
+                <td className="py-2.5 px-3 text-muted-foreground">{dayEs(d.dayOfWeek)}</td>
+                <td className="py-2.5 px-3 text-right font-mono font-semibold text-foreground">
+                  {fmtNum(Math.round(d.avg))}
+                </td>
+                <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">
+                  {fmtNum(d.min)}
+                </td>
+                <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">
+                  {fmtNum(d.max)}
+                </td>
+                <td className="py-2.5 px-3 text-right font-mono">
+                  <span className="inline-block px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-semibold">
+                    {fmtHour(d.peakHour)}
+                  </span>
+                </td>
+                <td className="py-2.5 px-3 text-right font-mono">
+                  <span className="inline-block px-2 py-0.5 rounded-md bg-[oklch(0.55_0.15_250_/_0.12)] text-[oklch(0.5_0.15_250)] text-xs font-semibold">
+                    {fmtHour(d.valleyHour)}
+                  </span>
+                </td>
+                <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">
+                  {fmtNum(d.samples)}
+                </td>
+              </tr>
+            ))}
             {pageRows.length === 0 && (
               <tr>
                 <td colSpan={COLUMNS.length} className="py-8 text-center text-muted-foreground">

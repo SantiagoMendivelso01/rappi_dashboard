@@ -46,11 +46,11 @@ export function AnomalyTable({ anomalies }: { anomalies: Anomaly[] }) {
     <div className="card-rappi p-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
-          <h3 className="font-bold text-foreground">Tabla de anomalías</h3>
+          <h3 className="font-bold text-foreground">Top 5 anomalías más bruscas</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
             {anomalies.length === 0
-              ? "Sin anomalías detectadas en este rango."
-              : `${anomalies.length} eventos: caídas/subidas >±1% en 1 min y outliers ±2σ (rolling 5 min).`}
+              ? "Sin anomalías ≥ ±10% en 1 minuto."
+              : `Caídas/subidas ≥ ±10% en 1 min, ordenadas por magnitud.`}
           </p>
         </div>
         <div className="flex gap-1.5 flex-wrap">
@@ -107,8 +107,7 @@ export function AnomalyTable({ anomalies }: { anomalies: Anomaly[] }) {
                 const tsStr = `${a.date} ${String(ts.getHours()).padStart(2, "0")}:${String(
                   ts.getMinutes()
                 ).padStart(2, "0")}:${String(ts.getSeconds()).padStart(2, "0")}`;
-                const kindLabel =
-                  a.kind === "drop" ? "Caída" : a.kind === "spike" ? "Subida" : "Outlier ±2σ";
+                const kindLabel = a.kind === "drop" ? "Caída" : "Subida";
                 return (
                   <tr
                     key={i}
