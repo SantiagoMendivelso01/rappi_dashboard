@@ -111,12 +111,18 @@ export function ChatBot({ rows, fileName }: Props) {
           interim += txt;
         }
       }
+      // Hubo actividad de voz: reiniciamos el timer de silencio
+      armSilenceTimer();
       const base = baseInputRef.current;
       const finals = finalTranscriptRef.current;
       const sep1 = base && finals && !base.endsWith(" ") ? " " : "";
       const sep2 = (base + sep1 + finals) && interim ? " " : "";
       setInput((base + sep1 + finals + sep2 + interim).trimStart());
     };
+
+    // Algunos navegadores emiten onspeechstart / onsoundstart cuando detectan audio
+    rec.onspeechstart = () => armSilenceTimer();
+    rec.onsoundstart = () => armSilenceTimer();
 
     rec.onerror = (e: any) => {
       const code = e?.error || "error";
