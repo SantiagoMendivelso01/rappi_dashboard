@@ -10,6 +10,7 @@ import { HourlyAvgChart } from "@/components/dashboard/HourlyAvgChart";
 import { AnomalyTable } from "@/components/dashboard/AnomalyTable";
 import { Heatmap } from "@/components/dashboard/Heatmap";
 import { DataTable } from "@/components/dashboard/DataTable";
+import { ReportButton } from "@/components/dashboard/ReportButton";
 import { parseCSV, type Row } from "@/lib/csv";
 import {
   aggregateByDay,
@@ -103,12 +104,22 @@ function Index() {
 
         {rows && !loading && (
           <div className="space-y-5">
-            <FilterBar
-              filters={filters}
-              onChange={setFilters}
-              onReset={() => setFilters(emptyFilters)}
-              dateBounds={dateBounds}
-            />
+            <div className="flex flex-col xl:flex-row xl:items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <FilterBar
+                  filters={filters}
+                  onChange={setFilters}
+                  onReset={() => setFilters(emptyFilters)}
+                  dateBounds={dateBounds}
+                />
+              </div>
+              <ReportButton
+                rows={rows}
+                filteredRows={filtered}
+                filters={filters}
+                fileName={fileName}
+              />
+            </div>
 
             <KpiCards stats={stats} />
 
