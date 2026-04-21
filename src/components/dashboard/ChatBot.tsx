@@ -178,11 +178,14 @@ export function ChatBot({ rows, fileName }: Props) {
             boxShadow: "0 12px 32px -8px oklch(0.65 0.22 30 / 0.45)",
           }}
         >
-          <img
-            src={rappiChatbotIcon}
-            alt="Rappi AI"
-            className="w-10 h-10 rounded-full bg-white/20 object-cover"
-          />
+          <span className="w-11 h-11 rounded-full overflow-hidden inline-block shrink-0">
+            <img
+              src={rappiChatbotIcon}
+              alt="Rappi AI"
+              className="w-full h-full object-cover"
+              style={{ objectPosition: "center 35%", transform: "scale(1.4)" }}
+            />
+          </span>
           <span className="hidden sm:inline">Pregúntale a Rappi AI</span>
           <span className="sm:hidden">Rappi AI</span>
         </button>
@@ -197,8 +200,13 @@ export function ChatBot({ rows, fileName }: Props) {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-gradient-to-r from-primary to-[oklch(0.7_0.2_25)] text-primary-foreground">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-full bg-white/25 overflow-hidden flex items-center justify-center ring-2 ring-white/30">
-                <img src={rappiChatbotIcon} alt="Rappi AI" className="w-full h-full object-cover" />
+              <div className="w-10 h-10 rounded-full overflow-hidden shrink-0">
+                <img
+                  src={rappiChatbotIcon}
+                  alt="Rappi AI"
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: "center 35%", transform: "scale(1.4)" }}
+                />
               </div>
               <div>
                 <p className="font-bold leading-tight text-sm">Rappi Insights</p>
@@ -232,8 +240,13 @@ export function ChatBot({ rows, fileName }: Props) {
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-background">
             {messages.length === 0 && (
               <div className="text-center pt-4">
-                <div className="w-20 h-20 mx-auto rounded-full bg-primary/10 overflow-hidden flex items-center justify-center mb-3 ring-4 ring-primary/15">
-                  <img src={rappiChatbotIcon} alt="Rappi AI" className="w-full h-full object-cover" />
+                <div className="w-20 h-20 mx-auto rounded-full overflow-hidden mb-3">
+                  <img
+                    src={rappiChatbotIcon}
+                    alt="Rappi AI"
+                    className="w-full h-full object-cover"
+                    style={{ objectPosition: "center 35%", transform: "scale(1.4)" }}
+                  />
                 </div>
                 <p className="font-semibold text-foreground">Hola 👋</p>
                 <p className="text-sm text-muted-foreground mt-1 mb-4">
