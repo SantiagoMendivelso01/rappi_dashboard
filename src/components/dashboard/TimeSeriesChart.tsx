@@ -1,15 +1,13 @@
 import { useMemo, useState } from "react";
 import {
   ResponsiveContainer,
-  ComposedChart,
+  AreaChart,
   Area,
-  Line,
-  Scatter,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Brush,
+  ReferenceDot,
 } from "recharts";
 import type { Row } from "@/lib/csv";
 import { fmtNum } from "@/lib/csv";
@@ -22,18 +20,25 @@ type Point = {
   ts: number;
   label: string;
   value: number;
-  drop: number | null;
-  spike: number | null;
-  outlier: number | null;
 };
 
-const MAX_POINTS = 600; // downsampling target
+const MAX_POINTS = 600;
+const SERIES_COLOR = "oklch(0.645 0.218 32)"; // naranja Rappi
+const ANOMALY_COLOR = "oklch(0.55 0.22 25)"; // rojo-naranja oscuro neutral
 
 export function TimeSeriesChart({ rows, anomalies }: { rows: Row[]; anomalies: Anomaly[] }) {
   const [zoom, setZoom] = useState<Zoom>("full");
 
-  const { data, totalPoints, sampled } = useMemo(() => {
-    if (rows.length === 0) return { data: [] as Point[], totalPoints: 0, sampled: false };
+  const { data, totalPoints, sampled, visibleAnomalies, lastLabel } = useMemo(() => {
+    if (rows.length === 0) {
+      return {
+        data: [] as Point[],
+        totalPoints: 0,
+        sampled: false,
+        visibleAnomalies: [] as Anomaly[],
+        lastLabel: "",
+      };
+    }
     const lastTs = rows[rows.length - 1].timestamp.getTime();
     let sliced = rows;
     if (zoom === "1h") {
@@ -44,23 +49,9 @@ export function TimeSeriesChart({ rows, anomalies }: { rows: Row[]; anomalies: A
       sliced = rows.filter((r) => r.timestamp.getTime() >= cutoff);
     }
 
-    // 1) downsample serie principal con LTTB
-    const series = sliced.map((r) => ({ x: r.timestamp.getTime(), y: r.visibleStores, r }));
+    const series = sliced.map((r) => ({ x: r.timestamp.getTime(), y: r.visibleStores }));
     const wasSampled = series.length > MAX_POINTS;
     const sampledSeries = wasSampled ? lttb(series, MAX_POINTS) : series;
-
-    // 2) índice de anomalías por timestamp para mantenerlas todas visibles
-    const dropMap = new Map<number, number>();
-    const spikeMap = new Map<number, number>();
-    const outlierMap = new Map<number, number>();
-    for (const a of anomalies) {
-      const t = a.timestamp.getTime();
-      if (t < (sliced[0]?.timestamp.getTime() ?? 0)) continue;
-      if (t > lastTs) continue;
-      if (a.kind === "drop") dropMap.set(t, a.value);
-      else if (a.kind === "spike") spikeMap.set(t, a.value);
-      else outlierMap.set(t, a.value);
-    }
 
     const fmtLabel = (d: Date) => {
       const dd = String(d.getDate()).padStart(2, "0");
@@ -70,68 +61,64 @@ export function TimeSeriesChart({ rows, anomalies }: { rows: Row[]; anomalies: A
       return `${dd}/${mo} ${hh}:${mm}`;
     };
 
-    // 3) merge: puntos de la serie + cualquier anomalía no incluida
-    const points = new Map<number, Point>();
-    for (const s of sampledSeries) {
-      points.set(s.x, {
-        ts: s.x,
-        label: fmtLabel(new Date(s.x)),
-        value: s.y,
-        drop: dropMap.get(s.x) ?? null,
-        spike: spikeMap.get(s.x) ?? null,
-        outlier: outlierMap.get(s.x) ?? null,
-      });
-    }
-    // asegurar que cada anomalía tenga un punto (aunque caiga fuera del downsample)
-    const ensure = (m: Map<number, number>, key: "drop" | "spike" | "outlier") => {
-      for (const [t, v] of m) {
-        const existing = points.get(t);
-        if (existing) {
-          existing[key] = v;
-        } else {
-          points.set(t, {
-            ts: t,
-            label: fmtLabel(new Date(t)),
-            value: v,
-            drop: key === "drop" ? v : null,
-            spike: key === "spike" ? v : null,
-            outlier: key === "outlier" ? v : null,
-          });
-        }
-      }
-    };
-    ensure(dropMap, "drop");
-    ensure(spikeMap, "spike");
-    ensure(outlierMap, "outlier");
+    const points: Point[] = sampledSeries.map((s) => ({
+      ts: s.x,
+      label: fmtLabel(new Date(s.x)),
+      value: s.y,
+    }));
 
-    const sorted = Array.from(points.values()).sort((a, b) => a.ts - b.ts);
-    return { data: sorted, totalPoints: sliced.length, sampled: wasSampled };
+    // anomalías visibles dentro del rango actual
+    const firstTs = sliced[0]?.timestamp.getTime() ?? 0;
+    const visAnoms = anomalies.filter((a) => {
+      const t = a.timestamp.getTime();
+      return t >= firstTs && t <= lastTs;
+    });
+
+    // mapear cada anomalía al label del punto más cercano de la serie muestreada
+    const labelByAnomalyTs = new Map<number, string>();
+    if (points.length > 0) {
+      for (const a of visAnoms) {
+        const t = a.timestamp.getTime();
+        let lo = 0;
+        let hi = points.length - 1;
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1;
+          if (points[mid].ts < t) lo = mid + 1;
+          else hi = mid;
+        }
+        const cand = points[lo];
+        const prev = lo > 0 ? points[lo - 1] : cand;
+        const nearest =
+          Math.abs(cand.ts - t) < Math.abs(prev.ts - t) ? cand : prev;
+        labelByAnomalyTs.set(t, nearest.label);
+      }
+    }
+
+    const enriched = visAnoms
+      .map((a) => ({ ...a, _label: labelByAnomalyTs.get(a.timestamp.getTime()) }))
+      .filter((a): a is Anomaly & { _label: string } => Boolean(a._label));
+
+    return {
+      data: points,
+      totalPoints: sliced.length,
+      sampled: wasSampled,
+      visibleAnomalies: enriched,
+      lastLabel: points[points.length - 1]?.label ?? "",
+    };
   }, [rows, anomalies, zoom]);
 
-  const dropCount = data.filter((d) => d.drop !== null).length;
-  const spikeCount = data.filter((d) => d.spike !== null).length;
-
   return (
-    <div className="card-rappi p-5 relative overflow-hidden">
-      <div
-        className="absolute inset-x-0 top-0 h-1"
-        style={{
-          background:
-            "linear-gradient(90deg, var(--primary), var(--rappi-orange-light), var(--primary))",
-        }}
-      />
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+    <div className="card-rappi p-0 relative overflow-hidden">
+      <div className="px-5 pt-5 pb-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h3 className="font-bold text-foreground flex items-center gap-2">
             <Activity className="w-4 h-4 text-primary" />
-            Serie temporal de tiendas visibles
+            Tiendas visibles
           </h3>
-          <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-3 flex-wrap">
+          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-3 flex-wrap">
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-destructive" /> {dropCount} caídas
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-success" /> {spikeCount} subidas
+              <span className="w-2 h-2 rounded-full" style={{ background: ANOMALY_COLOR }} />
+              {visibleAnomalies.length} anomalías ±10%
             </span>
             <span className="text-muted-foreground/70">
               · {fmtNum(totalPoints)} muestras{sampled ? ` (vista: ${MAX_POINTS})` : ""}
@@ -155,93 +142,84 @@ export function TimeSeriesChart({ rows, anomalies }: { rows: Row[]; anomalies: A
         </div>
       </div>
 
-      <div className="h-80">
+      <div className="h-80 px-2 pb-2">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+          <AreaChart data={data} margin={{ top: 8, right: 56, left: 8, bottom: 8 }}>
             <defs>
               <linearGradient id="seriesFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="oklch(0.645 0.218 32)" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="oklch(0.645 0.218 32)" stopOpacity={0} />
+                <stop offset="0%" stopColor={SERIES_COLOR} stopOpacity={0.28} />
+                <stop offset="100%" stopColor={SERIES_COLOR} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.92 0.005 286)" vertical={false} />
+            <CartesianGrid
+              strokeDasharray="2 6"
+              stroke="oklch(0.92 0.005 286)"
+              vertical={false}
+            />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 11, fill: "oklch(0.55 0.015 286)" }}
-              minTickGap={60}
-              tickLine={false}
-              axisLine={{ stroke: "oklch(0.92 0.005 286)" }}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: "oklch(0.55 0.015 286)" }}
-              tickFormatter={(v) => fmtNum(v as number)}
-              width={50}
+              tick={{ fontSize: 10, fill: "oklch(0.55 0.015 286)" }}
+              minTickGap={80}
               tickLine={false}
               axisLine={false}
+            />
+            <YAxis
+              orientation="right"
+              tick={{ fontSize: 10, fill: "oklch(0.55 0.015 286)" }}
+              tickFormatter={(v) => fmtNum(v as number)}
+              width={48}
+              tickLine={false}
+              axisLine={false}
+              domain={["auto", "auto"]}
             />
             <Tooltip
               contentStyle={{
                 background: "oklch(0.18 0.01 286)",
                 border: "none",
-                borderRadius: 10,
+                borderRadius: 8,
                 fontSize: 12,
                 color: "white",
-                padding: "8px 12px",
+                padding: "6px 10px",
                 boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
               }}
-              labelStyle={{ color: "oklch(0.85 0.005 286)", fontWeight: 600, marginBottom: 4 }}
-              formatter={(value: number, name: string) => {
-                if (name === "drop") return [`${fmtNum(value)} (caída)`, "Caída"];
-                if (name === "spike") return [`${fmtNum(value)} (subida)`, "Subida"];
-                if (name === "outlier") return [`${fmtNum(value)} (outlier)`, "Outlier"];
-                return [fmtNum(value), "Tiendas"];
-              }}
+              labelStyle={{ color: "oklch(0.85 0.005 286)", fontWeight: 600, marginBottom: 2 }}
+              formatter={(value: number) => [fmtNum(value), "Tiendas"]}
             />
             <Area
               type="monotone"
               dataKey="value"
-              stroke="oklch(0.645 0.218 32)"
-              strokeWidth={1.8}
+              stroke={SERIES_COLOR}
+              strokeWidth={1.6}
               fill="url(#seriesFill)"
               dot={false}
               isAnimationActive={false}
-              activeDot={{ r: 4, fill: "oklch(0.645 0.218 32)", stroke: "white", strokeWidth: 2 }}
+              activeDot={{ r: 4, fill: SERIES_COLOR, stroke: "white", strokeWidth: 2 }}
             />
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke="oklch(0.645 0.218 32)"
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-              legendType="none"
-            />
-            <Scatter
-              dataKey="outlier"
-              fill="oklch(0.78 0.16 70)"
-              shape="circle"
-              isAnimationActive={false}
-            />
-            <Scatter
-              dataKey="drop"
-              fill="oklch(0.628 0.237 27)"
-              shape="circle"
-              isAnimationActive={false}
-            />
-            <Scatter
-              dataKey="spike"
-              fill="oklch(0.55 0.17 145)"
-              shape="circle"
-              isAnimationActive={false}
-            />
-            <Brush
-              dataKey="label"
-              height={24}
-              stroke="oklch(0.645 0.218 32)"
-              travellerWidth={8}
-              fill="oklch(0.97 0.005 286)"
-            />
-          </ComposedChart>
+            {/* línea punteada horizontal en último valor (estilo TradingView "cierre anterior") */}
+            {data.length > 0 && (
+              <ReferenceDot
+                x={lastLabel}
+                y={data[data.length - 1].value}
+                r={3.5}
+                fill={SERIES_COLOR}
+                stroke="white"
+                strokeWidth={1.5}
+                isFront
+              />
+            )}
+            {visibleAnomalies.map((a, idx) => (
+              <ReferenceDot
+                key={idx}
+                x={a._label}
+                y={a.value}
+                r={4}
+                fill={ANOMALY_COLOR}
+                stroke="white"
+                strokeWidth={1.5}
+                isFront
+              />
+            ))}
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>
