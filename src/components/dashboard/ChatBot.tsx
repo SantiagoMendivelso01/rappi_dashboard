@@ -275,30 +275,63 @@ export function ChatBot({ rows, fileName }: Props) {
               e.preventDefault();
               send(input);
             }}
-            className="p-3 border-t border-border bg-card flex items-end gap-2"
+            className="p-3 border-t border-border bg-card flex flex-col gap-1.5"
           >
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  send(input);
-                }
-              }}
-              placeholder="Escribe tu pregunta…"
-              rows={1}
-              disabled={loading}
-              className="flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary max-h-32"
-            />
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              aria-label="Enviar"
-              className="w-10 h-10 shrink-0 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </button>
+            {(voiceError || listening) && (
+              <div className="flex items-center gap-2 px-1 text-[11px]">
+                {listening ? (
+                  <span className="flex items-center gap-1.5 text-primary font-medium">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                    </span>
+                    Escuchando… habla ahora
+                  </span>
+                ) : (
+                  <span className="text-destructive">{voiceError}</span>
+                )}
+              </div>
+            )}
+            <div className="flex items-end gap-2">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    send(input);
+                  }
+                }}
+                placeholder={listening ? "Escuchando…" : "Escribe o dicta tu pregunta…"}
+                rows={1}
+                disabled={loading}
+                className="flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary max-h-32"
+              />
+              {voiceSupported && (
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  disabled={loading}
+                  aria-label={listening ? "Detener dictado" : "Dictar por voz"}
+                  title={listening ? "Detener dictado" : "Dictar por voz"}
+                  className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                    listening
+                      ? "bg-destructive text-destructive-foreground hover:opacity-90 animate-pulse"
+                      : "bg-muted text-foreground hover:bg-muted/70 border border-border"
+                  }`}
+                >
+                  {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+              )}
+              <button
+                type="submit"
+                disabled={loading || !input.trim()}
+                aria-label="Enviar"
+                className="w-10 h-10 shrink-0 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </button>
+            </div>
           </form>
         </div>
       )}
