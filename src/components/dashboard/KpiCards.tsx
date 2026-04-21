@@ -17,7 +17,7 @@ const fmtTimestamp = (d: Date | null) => {
 };
 
 export function KpiCards({ stats, opAnomaliesCount, opCriticalCount = 0 }: Props) {
-  const opCount = opAnomaniesCountSafe(opAnomaliesCount, stats.anomaliesCount);
+  const opCount = opAnomaliesCount ?? stats.anomaliesCount;
   const trendUp = stats.trend7d >= 0;
   const trendClass = trendUp ? "text-[oklch(0.55_0.17_145)]" : "text-destructive";
   const trendBg = trendUp
