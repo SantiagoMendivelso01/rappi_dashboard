@@ -84,15 +84,19 @@ export function HourlyAvgChart({ rows }: { rows: Row[] }) {
               width={56}
             />
             <Tooltip
-              cursor={{ fill: "oklch(0.95 0.005 286)" }}
+              cursor={{ fill: "oklch(0.95 0.005 286 / 0.4)" }}
+              wrapperStyle={{ outline: "none" }}
               contentStyle={{
-                background: "oklch(0.18 0.01 286)",
-                border: "none",
-                borderRadius: 8,
+                background: "oklch(1 0 0 / 0.96)",
+                border: "1px solid oklch(0.9 0.005 286)",
+                borderRadius: 10,
                 fontSize: 12,
-                color: "white",
+                color: "oklch(0.2 0.01 286)",
+                boxShadow: "0 8px 24px -8px oklch(0.2 0.02 286 / 0.18)",
+                padding: "8px 12px",
               }}
-              labelStyle={{ color: "oklch(0.85 0.005 286)", fontWeight: 600 }}
+              labelStyle={{ color: "oklch(0.35 0.01 286)", fontWeight: 700, marginBottom: 2 }}
+              itemStyle={{ color: "oklch(0.2 0.01 286)" }}
               formatter={(value: number, _n, p) => [
                 `${fmtNum(value)} tiendas (${p.payload.franja})`,
                 "Promedio",
