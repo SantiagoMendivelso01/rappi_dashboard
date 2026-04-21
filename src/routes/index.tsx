@@ -11,6 +11,7 @@ import { AnomalyTable } from "@/components/dashboard/AnomalyTable";
 import { Heatmap } from "@/components/dashboard/Heatmap";
 import { DataTable } from "@/components/dashboard/DataTable";
 import { ReportButton } from "@/components/dashboard/ReportButton";
+import { ChatBot } from "@/components/dashboard/ChatBot";
 import { parseCSV, type Row } from "@/lib/csv";
 import {
   aggregateByDay,
@@ -140,6 +141,8 @@ function Index() {
           </div>
         )}
       </main>
+
+      {rows && !loading && <ChatBot rows={rows} fileName={fileName} />}
     </div>
   );
 }
