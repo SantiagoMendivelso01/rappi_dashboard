@@ -411,7 +411,7 @@ export function detectOpAnomalies(rows: Row[]): OpAnomaly[] {
       date: r.date,
       hour: r.hour,
       minute: r.minute,
-      second: r.second,
+      second: r.timestamp.getSeconds(),
       value: r.visibleStores,
       prevValue: prev.visibleStores,
       dropPct,
