@@ -50,7 +50,7 @@ export function AnomalyTable({ anomalies }: { anomalies: Anomaly[] }) {
           <p className="text-xs text-muted-foreground mt-0.5">
             {anomalies.length === 0
               ? "Sin anomalías detectadas en este rango."
-              : `${anomalies.length} eventos fuera de rango (z-score > 2.5), ordenados por severidad.`}
+              : `${anomalies.length} eventos: caídas/subidas >±1% en 1 min y outliers ±2σ (rolling 5 min).`}
           </p>
         </div>
         <div className="flex gap-1.5 flex-wrap">
