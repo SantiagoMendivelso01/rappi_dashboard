@@ -177,7 +177,7 @@ const PCT_WINDOW = 6; // 6 muestras = ~1 min si cada muestra es 10s
 const ROLL_WINDOW = 30; // ~5 min (se mantiene para 'expected')
 const DROP_THRESHOLD = -10.0; // ±10% en 1 min
 const SPIKE_THRESHOLD = 10.0;
-const MAX_ANOMALIES = 5; // solo las 5 más bruscas
+const MAX_PER_KIND = 5; // top 5 caídas + top 5 recuperaciones
 
 function rollingStats(values: number[], window: number) {
   const n = values.length;
@@ -251,9 +251,18 @@ export function detectAnomalies(rows: Row[]): Anomaly[] {
     });
   }
 
-  // Solo las 5 anomalías más bruscas (mayor magnitud de cambio porcentual)
-  out.sort((a, b) => Math.abs(b.deltaPct) - Math.abs(a.deltaPct));
-  return out.slice(0, MAX_ANOMALIES);
+  // Top 5 caídas más bruscas + top 5 recuperaciones (subidas) más bruscas
+  const drops = out
+    .filter((a) => a.kind === "drop")
+    .sort((a, b) => a.deltaPct - b.deltaPct) // más negativo primero
+    .slice(0, MAX_PER_KIND);
+  const recoveries = out
+    .filter((a) => a.kind === "spike")
+    .sort((a, b) => b.deltaPct - a.deltaPct) // más positivo primero
+    .slice(0, MAX_PER_KIND);
+  return [...drops, ...recoveries].sort(
+    (a, b) => Math.abs(b.deltaPct) - Math.abs(a.deltaPct)
+  );
 }
 
 /**
