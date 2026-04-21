@@ -15,7 +15,7 @@ import { hourlyAverage } from "@/lib/dashboard-data";
 
 const PEAK_COLOR = "oklch(0.645 0.218 32)"; // naranja Rappi (primary)
 const VALLEY_COLOR = "oklch(0.6 0.13 240)"; // azul medio
-const MID_COLOR = "oklch(0.85 0.02 50)"; // beige neutro tirando a naranja claro
+const MID_COLOR = "oklch(0.78 0.15 55)"; // naranja melón vibrante
 const EMPTY_COLOR = "oklch(0.95 0.003 286)";
 
 export function HourlyAvgChart({ rows }: { rows: Row[] }) {
