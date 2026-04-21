@@ -21,6 +21,8 @@ REGLAS ESTRICTAS:
 CONTEXTO DEL DASHBOARD (datos reales del CSV cargado):
 `;
 
+const ANTHROPIC_MODEL = "claude-haiku-4-5";
+
 export const chatWithDashboard = createServerFn({ method: "POST" })
   .inputValidator((input: ChatInput) => {
     if (!input || !Array.isArray(input.messages)) {
@@ -41,49 +43,73 @@ export const chatWithDashboard = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ data }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return {
         ok: false as const,
-        error: "LOVABLE_API_KEY no está configurada en el servidor.",
+        error: "ANTHROPIC_API_KEY no está configurada en el servidor.",
       };
     }
 
     try {
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT + data.context },
-            ...data.messages,
-          ],
+          model: ANTHROPIC_MODEL,
+          max_tokens: 1024,
+          system: SYSTEM_PROMPT + data.context,
+          messages: data.messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
         }),
       });
 
       if (res.status === 429) {
-        return { ok: false as const, error: "Demasiadas solicitudes. Espera un momento e intenta de nuevo." };
+        return {
+          ok: false as const,
+          error: "Demasiadas solicitudes a Anthropic. Espera un momento e intenta de nuevo.",
+        };
+      }
+      if (res.status === 401 || res.status === 403) {
+        return {
+          ok: false as const,
+          error: "La API key de Anthropic no es válida o no tiene permisos.",
+        };
       }
       if (res.status === 402) {
         return {
           ok: false as const,
-          error: "Se agotaron los créditos de IA. Añade fondos en Settings → Workspace → Usage.",
+          error: "Se agotaron los créditos de tu cuenta Anthropic.",
         };
       }
       if (!res.ok) {
         const txt = await res.text();
-        console.error("AI gateway error:", res.status, txt);
-        return { ok: false as const, error: "Error del servicio de IA. Intenta de nuevo." };
+        console.error("Anthropic API error:", res.status, txt);
+        return {
+          ok: false as const,
+          error: `Error del servicio de IA (${res.status}). Intenta de nuevo.`,
+        };
       }
 
       const json = await res.json();
-      const content =
-        json?.choices?.[0]?.message?.content ?? "No pude generar una respuesta.";
-      return { ok: true as const, content: String(content) };
+      // Anthropic devuelve { content: [{ type: "text", text: "..." }, ...] }
+      const content = Array.isArray(json?.content)
+        ? json.content
+            .filter((c: { type: string }) => c.type === "text")
+            .map((c: { text: string }) => c.text)
+            .join("\n")
+        : "";
+
+      return {
+        ok: true as const,
+        content: String(content || "No pude generar una respuesta."),
+      };
     } catch (e) {
       console.error("chatWithDashboard error:", e);
       return {
