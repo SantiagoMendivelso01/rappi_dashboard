@@ -75,8 +75,13 @@ export function HourlyAvgChart({ rows }: { rows: Row[] }) {
             />
             <YAxis
               tick={{ fontSize: 11, fill: "oklch(0.55 0.015 286)" }}
-              tickFormatter={(v) => fmtNum(v as number)}
-              width={50}
+              tickFormatter={(v) => {
+                const n = v as number;
+                if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+                if (n >= 1_000) return `${Math.round(n / 1_000)}k`;
+                return fmtNum(n);
+              }}
+              width={56}
             />
             <Tooltip
               cursor={{ fill: "oklch(0.95 0.005 286)" }}
