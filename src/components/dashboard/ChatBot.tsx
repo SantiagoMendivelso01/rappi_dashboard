@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { MessageCircle, X, Send, Loader2, Sparkles, Trash2, Mic, MicOff } from "lucide-react";
+import { X, Send, Loader2, Sparkles, Trash2, Mic, MicOff } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { chatWithDashboard } from "@/lib/chat.functions";
 import type { Row } from "@/lib/csv";
 import { buildDashboardContext } from "@/lib/chat-context";
+import rappiChatbotIcon from "@/assets/rappi-chatbot-icon.png";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -172,12 +173,16 @@ export function ChatBot({ rows, fileName }: Props) {
         <button
           onClick={() => setOpen(true)}
           aria-label="Abrir asistente"
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-primary text-primary-foreground rounded-full shadow-2xl hover:scale-105 transition-transform px-5 py-3.5 font-semibold animate-float"
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-primary text-primary-foreground rounded-full shadow-2xl hover:scale-105 transition-transform pl-2 pr-5 py-2 font-semibold animate-float"
           style={{
             boxShadow: "0 12px 32px -8px oklch(0.65 0.22 30 / 0.45)",
           }}
         >
-          <Sparkles className="w-5 h-5" />
+          <img
+            src={rappiChatbotIcon}
+            alt="Rappi AI"
+            className="w-10 h-10 rounded-full bg-white/20 object-cover"
+          />
           <span className="hidden sm:inline">Pregúntale a Rappi AI</span>
           <span className="sm:hidden">Rappi AI</span>
         </button>
@@ -192,8 +197,8 @@ export function ChatBot({ rows, fileName }: Props) {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-gradient-to-r from-primary to-[oklch(0.7_0.2_25)] text-primary-foreground">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                <MessageCircle className="w-4 h-4" />
+              <div className="w-9 h-9 rounded-full bg-white/25 overflow-hidden flex items-center justify-center ring-2 ring-white/30">
+                <img src={rappiChatbotIcon} alt="Rappi AI" className="w-full h-full object-cover" />
               </div>
               <div>
                 <p className="font-bold leading-tight text-sm">Rappi Insights</p>
@@ -227,8 +232,8 @@ export function ChatBot({ rows, fileName }: Props) {
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-background">
             {messages.length === 0 && (
               <div className="text-center pt-4">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
-                  <Sparkles className="w-7 h-7 text-primary" />
+                <div className="w-20 h-20 mx-auto rounded-full bg-primary/10 overflow-hidden flex items-center justify-center mb-3 ring-4 ring-primary/15">
+                  <img src={rappiChatbotIcon} alt="Rappi AI" className="w-full h-full object-cover" />
                 </div>
                 <p className="font-semibold text-foreground">Hola 👋</p>
                 <p className="text-sm text-muted-foreground mt-1 mb-4">
