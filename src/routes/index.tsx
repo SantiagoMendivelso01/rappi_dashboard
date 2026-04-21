@@ -115,7 +115,9 @@ function Index() {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
               <TimeSeriesChart rows={filtered} anomalies={anomalies} />
               <HourlyAvgChart rows={filtered} />
-              <Heatmap rows={filtered} peak={peakGlobal} />
+              <div className="col-span-1 xl:col-span-2">
+                <Heatmap rows={filtered} peak={peakGlobal} />
+              </div>
             </div>
 
             <AnomalyTable anomalies={anomalies} />
