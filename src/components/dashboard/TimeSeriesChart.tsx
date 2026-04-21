@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import type { Row } from "@/lib/csv";
 import { fmtNum } from "@/lib/csv";
-import { lttb, type Anomaly } from "@/lib/dashboard-data";
+import { lttb, type Anomaly, type OpAnomaly } from "@/lib/dashboard-data";
 import { Activity } from "lucide-react";
 
 type Zoom = "1h" | "1d" | "full";
@@ -25,11 +25,21 @@ type Point = {
 const MAX_POINTS = 600;
 const SERIES_COLOR = "oklch(0.645 0.218 32)"; // naranja Rappi
 const ANOMALY_COLOR = "oklch(0.55 0.22 25)"; // rojo-naranja oscuro neutral
+const OP_CRITICAL_COLOR = "oklch(0.55 0.24 25)"; // rojo intenso
+const OP_WARNING_COLOR = "oklch(0.72 0.18 70)"; // ámbar
 
-export function TimeSeriesChart({ rows, anomalies }: { rows: Row[]; anomalies: Anomaly[] }) {
+export function TimeSeriesChart({
+  rows,
+  anomalies,
+  opAnomalies = [],
+}: {
+  rows: Row[];
+  anomalies: Anomaly[];
+  opAnomalies?: OpAnomaly[];
+}) {
   const [zoom, setZoom] = useState<Zoom>("full");
 
-  const { data, totalPoints, sampled, visibleAnomalies, lastLabel } = useMemo(() => {
+  const { data, totalPoints, sampled, visibleAnomalies, visibleOpAnomalies, lastLabel } = useMemo(() => {
     if (rows.length === 0) {
       return {
         data: [] as Point[],
