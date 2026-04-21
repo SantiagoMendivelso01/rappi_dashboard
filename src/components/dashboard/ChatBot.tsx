@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { MessageCircle, X, Send, Loader2, Sparkles, Trash2 } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Sparkles, Trash2, Mic, MicOff } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { chatWithDashboard } from "@/lib/chat.functions";
 import type { Row } from "@/lib/csv";
@@ -25,14 +25,93 @@ export function ChatBot({ rows, fileName }: Props) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const callChat = useServerFn(chatWithDashboard);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const baseInputRef = useRef<string>("");
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, loading, open]);
+
+  // Inicializar SpeechRecognition (Web Speech API)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const SR: any =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      setVoiceSupported(false);
+      return;
+    }
+    setVoiceSupported(true);
+    const rec = new SR();
+    rec.lang = "es-ES";
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+
+    rec.onresult = (event: any) => {
+      let transcript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      const base = baseInputRef.current;
+      const sep = base && !base.endsWith(" ") ? " " : "";
+      setInput(base + sep + transcript);
+    };
+
+    rec.onerror = (e: any) => {
+      const code = e?.error || "error";
+      const map: Record<string, string> = {
+        "not-allowed": "Permiso de micrófono denegado",
+        "service-not-allowed": "Servicio de voz no permitido",
+        "no-speech": "No se detectó voz",
+        "audio-capture": "No se encontró micrófono",
+        network: "Error de red en el reconocimiento",
+      };
+      setVoiceError(map[code] || `Error de voz: ${code}`);
+      setListening(false);
+    };
+
+    rec.onend = () => {
+      setListening(false);
+    };
+
+    recognitionRef.current = rec;
+    return () => {
+      try {
+        rec.abort();
+      } catch {
+        // noop
+      }
+    };
+  }, []);
+
+  const toggleListening = () => {
+    const rec = recognitionRef.current;
+    if (!rec) return;
+    if (listening) {
+      try {
+        rec.stop();
+      } catch {
+        // noop
+      }
+      return;
+    }
+    setVoiceError(null);
+    baseInputRef.current = input;
+    try {
+      rec.start();
+      setListening(true);
+    } catch {
+      // ya estaba activa
+    }
+  };
 
   const send = async (text: string) => {
     const trimmed = text.trim();
@@ -196,30 +275,63 @@ export function ChatBot({ rows, fileName }: Props) {
               e.preventDefault();
               send(input);
             }}
-            className="p-3 border-t border-border bg-card flex items-end gap-2"
+            className="p-3 border-t border-border bg-card flex flex-col gap-1.5"
           >
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  send(input);
-                }
-              }}
-              placeholder="Escribe tu pregunta…"
-              rows={1}
-              disabled={loading}
-              className="flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary max-h-32"
-            />
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              aria-label="Enviar"
-              className="w-10 h-10 shrink-0 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </button>
+            {(voiceError || listening) && (
+              <div className="flex items-center gap-2 px-1 text-[11px]">
+                {listening ? (
+                  <span className="flex items-center gap-1.5 text-primary font-medium">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                    </span>
+                    Escuchando… habla ahora
+                  </span>
+                ) : (
+                  <span className="text-destructive">{voiceError}</span>
+                )}
+              </div>
+            )}
+            <div className="flex items-end gap-2">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    send(input);
+                  }
+                }}
+                placeholder={listening ? "Escuchando…" : "Escribe o dicta tu pregunta…"}
+                rows={1}
+                disabled={loading}
+                className="flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary max-h-32"
+              />
+              {voiceSupported && (
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  disabled={loading}
+                  aria-label={listening ? "Detener dictado" : "Dictar por voz"}
+                  title={listening ? "Detener dictado" : "Dictar por voz"}
+                  className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                    listening
+                      ? "bg-destructive text-destructive-foreground hover:opacity-90 animate-pulse"
+                      : "bg-muted text-foreground hover:bg-muted/70 border border-border"
+                  }`}
+                >
+                  {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+              )}
+              <button
+                type="submit"
+                disabled={loading || !input.trim()}
+                aria-label="Enviar"
+                className="w-10 h-10 shrink-0 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </button>
+            </div>
           </form>
         </div>
       )}
