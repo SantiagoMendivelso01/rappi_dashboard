@@ -70,12 +70,9 @@ export type DailyAgg = {
   peakHour: number;
   valleyHour: number;
   samples: number;
-  availability: number; // % vs peak global
-  coverage: number;
-  incidents: number;
 };
 
-export function aggregateByDay(rows: Row[], peakGlobal: number): DailyAgg[] {
+export function aggregateByDay(rows: Row[], _peakGlobal?: number): DailyAgg[] {
   const map = new Map<string, Row[]>();
   for (const r of rows) {
     if (!map.has(r.date)) map.set(r.date, []);
@@ -88,7 +85,6 @@ export function aggregateByDay(rows: Row[], peakGlobal: number): DailyAgg[] {
     let max = -Infinity;
     let peakHour = 0;
     let valleyHour = 0;
-    let incidents = 0;
     for (const r of rs) {
       sum += r.visibleStores;
       if (r.visibleStores > max) {
@@ -99,7 +95,6 @@ export function aggregateByDay(rows: Row[], peakGlobal: number): DailyAgg[] {
         min = r.visibleStores;
         valleyHour = r.hour;
       }
-      if (r.isInterpolated) incidents++;
     }
     const avg = sum / rs.length;
     out.push({
@@ -111,19 +106,10 @@ export function aggregateByDay(rows: Row[], peakGlobal: number): DailyAgg[] {
       peakHour,
       valleyHour,
       samples: rs.length,
-      availability: peakGlobal > 0 ? (avg / peakGlobal) * 100 : 0,
-      coverage: rs.length > 0 ? ((rs.length - incidents) / rs.length) * 100 : 0,
-      incidents,
     });
   }
   out.sort((a, b) => a.date.localeCompare(b.date));
   return out;
-}
-
-export function availabilityClass(pct: number): "ok" | "warn" | "bad" {
-  if (pct >= 90) return "ok";
-  if (pct >= 70) return "warn";
-  return "bad";
 }
 
 export function heatmapMatrix(rows: Row[], peakGlobal: number) {
@@ -188,9 +174,10 @@ export type Anomaly = {
 };
 
 const PCT_WINDOW = 6; // 6 muestras = ~1 min si cada muestra es 10s
-const ROLL_WINDOW = 30; // ~5 min si cada muestra es 10s
-const DROP_THRESHOLD = -1.0;
-const SPIKE_THRESHOLD = 1.0;
+const ROLL_WINDOW = 30; // ~5 min (se mantiene para 'expected')
+const DROP_THRESHOLD = -10.0; // ±10% en 1 min
+const SPIKE_THRESHOLD = 10.0;
+const MAX_ANOMALIES = 5; // solo las 5 más bruscas
 
 function rollingStats(values: number[], window: number) {
   const n = values.length;
@@ -236,27 +223,18 @@ export function detectAnomalies(rows: Row[]): Anomaly[] {
     }
 
     let kind: AnomalyKind | null = null;
-    if (pct !== null && pct < DROP_THRESHOLD) kind = "drop";
-    else if (pct !== null && pct > SPIKE_THRESHOLD) kind = "spike";
-    else if (sd > 0 && (v > m + 2 * sd || v < m - 2 * sd)) kind = "outlier";
+    if (pct !== null && pct <= DROP_THRESHOLD) kind = "drop";
+    else if (pct !== null && pct >= SPIKE_THRESHOLD) kind = "spike";
 
     if (!kind) continue;
     if (seen.has(i)) continue;
     seen.add(i);
 
-    const deltaPct = pct ?? (m !== 0 ? ((v - m) / m) * 100 : 0);
+    const deltaPct = pct ?? 0;
     const z = sd > 0 ? (v - m) / sd : 0;
-
-    let severity: Anomaly["severity"];
     const absPct = Math.abs(deltaPct);
-    if (kind === "drop") {
-      severity = absPct >= 3 ? "critical" : "moderate";
-    } else if (kind === "spike") {
-      severity = "recovery";
-    } else {
-      // outlier puro
-      severity = v < m ? "moderate" : "recovery";
-    }
+    const severity: Anomaly["severity"] =
+      kind === "drop" ? (absPct >= 20 ? "critical" : "moderate") : "recovery";
 
     out.push({
       timestamp: r.timestamp,
@@ -273,14 +251,9 @@ export function detectAnomalies(rows: Row[]): Anomaly[] {
     });
   }
 
-  out.sort((a, b) => {
-    const sevOrder = { critical: 0, moderate: 1, recovery: 2 };
-    if (sevOrder[a.severity] !== sevOrder[b.severity]) {
-      return sevOrder[a.severity] - sevOrder[b.severity];
-    }
-    return a.deltaPct - b.deltaPct;
-  });
-  return out;
+  // Solo las 5 anomalías más bruscas (mayor magnitud de cambio porcentual)
+  out.sort((a, b) => Math.abs(b.deltaPct) - Math.abs(a.deltaPct));
+  return out.slice(0, MAX_ANOMALIES);
 }
 
 /**
