@@ -25,14 +25,93 @@ export function ChatBot({ rows, fileName }: Props) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const callChat = useServerFn(chatWithDashboard);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const baseInputRef = useRef<string>("");
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, loading, open]);
+
+  // Inicializar SpeechRecognition (Web Speech API)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const SR: any =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      setVoiceSupported(false);
+      return;
+    }
+    setVoiceSupported(true);
+    const rec = new SR();
+    rec.lang = "es-ES";
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+
+    rec.onresult = (event: any) => {
+      let transcript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      const base = baseInputRef.current;
+      const sep = base && !base.endsWith(" ") ? " " : "";
+      setInput(base + sep + transcript);
+    };
+
+    rec.onerror = (e: any) => {
+      const code = e?.error || "error";
+      const map: Record<string, string> = {
+        "not-allowed": "Permiso de micrófono denegado",
+        "service-not-allowed": "Servicio de voz no permitido",
+        "no-speech": "No se detectó voz",
+        "audio-capture": "No se encontró micrófono",
+        network: "Error de red en el reconocimiento",
+      };
+      setVoiceError(map[code] || `Error de voz: ${code}`);
+      setListening(false);
+    };
+
+    rec.onend = () => {
+      setListening(false);
+    };
+
+    recognitionRef.current = rec;
+    return () => {
+      try {
+        rec.abort();
+      } catch {
+        // noop
+      }
+    };
+  }, []);
+
+  const toggleListening = () => {
+    const rec = recognitionRef.current;
+    if (!rec) return;
+    if (listening) {
+      try {
+        rec.stop();
+      } catch {
+        // noop
+      }
+      return;
+    }
+    setVoiceError(null);
+    baseInputRef.current = input;
+    try {
+      rec.start();
+      setListening(true);
+    } catch {
+      // ya estaba activa
+    }
+  };
 
   const send = async (text: string) => {
     const trimmed = text.trim();
