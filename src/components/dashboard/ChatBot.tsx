@@ -67,39 +67,67 @@ export function ChatBot({ rows, fileName }: Props) {
     setVoiceSupported(true);
     const rec = new SR();
     rec.lang = "es-ES";
-    rec.continuous = false;
+    // Modo continuo: tolera pausas naturales de habla sin cortarse al primer silencio.
+    rec.continuous = true;
     rec.interimResults = true;
     rec.maxAlternatives = 1;
 
     rec.onresult = (event: any) => {
-      let transcript = "";
+      let interim = "";
+      // Acumulamos los resultados "final" en finalTranscriptRef para que sobrevivan
+      // a reinicios automáticos del reconocedor.
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
+        const res = event.results[i];
+        const txt = res[0].transcript;
+        if (res.isFinal) {
+          const prev = finalTranscriptRef.current;
+          const sep = prev && !prev.endsWith(" ") ? " " : "";
+          finalTranscriptRef.current = prev + sep + txt.trim();
+        } else {
+          interim += txt;
+        }
       }
       const base = baseInputRef.current;
-      const sep = base && !base.endsWith(" ") ? " " : "";
-      setInput(base + sep + transcript);
+      const finals = finalTranscriptRef.current;
+      const sep1 = base && finals && !base.endsWith(" ") ? " " : "";
+      const sep2 = (base + sep1 + finals) && interim ? " " : "";
+      setInput((base + sep1 + finals + sep2 + interim).trimStart());
     };
 
     rec.onerror = (e: any) => {
       const code = e?.error || "error";
+      // "no-speech" y "aborted" son frecuentes en pausas largas: ignorar y dejar
+      // que onend reinicie automáticamente si el usuario sigue queriendo dictar.
+      if (code === "no-speech" || code === "aborted") {
+        return;
+      }
       const map: Record<string, string> = {
         "not-allowed": "Permiso de micrófono denegado",
         "service-not-allowed": "Servicio de voz no permitido",
-        "no-speech": "No se detectó voz",
         "audio-capture": "No se encontró micrófono",
         network: "Error de red en el reconocimiento",
       };
       setVoiceError(map[code] || `Error de voz: ${code}`);
+      wantListeningRef.current = false;
       setListening(false);
     };
 
     rec.onend = () => {
+      // Si el usuario aún quiere seguir dictando (pausa larga), reiniciamos.
+      if (wantListeningRef.current) {
+        try {
+          rec.start();
+          return;
+        } catch {
+          // si falla, caemos a apagado
+        }
+      }
       setListening(false);
     };
 
     recognitionRef.current = rec;
     return () => {
+      wantListeningRef.current = false;
       try {
         rec.abort();
       } catch {
@@ -112,6 +140,7 @@ export function ChatBot({ rows, fileName }: Props) {
     const rec = recognitionRef.current;
     if (!rec) return;
     if (listening) {
+      wantListeningRef.current = false;
       try {
         rec.stop();
       } catch {
@@ -121,6 +150,8 @@ export function ChatBot({ rows, fileName }: Props) {
     }
     setVoiceError(null);
     baseInputRef.current = input;
+    finalTranscriptRef.current = "";
+    wantListeningRef.current = true;
     try {
       rec.start();
       setListening(true);
