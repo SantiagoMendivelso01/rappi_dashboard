@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { MessageCircle, X, Send, Loader2, Sparkles, Trash2 } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Sparkles, Trash2, Mic, MicOff } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { chatWithDashboard } from "@/lib/chat.functions";
 import type { Row } from "@/lib/csv";
