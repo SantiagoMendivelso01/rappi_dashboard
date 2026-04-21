@@ -46,6 +46,7 @@ export function TimeSeriesChart({
         totalPoints: 0,
         sampled: false,
         visibleAnomalies: [] as Anomaly[],
+        visibleOpAnomalies: [] as (OpAnomaly & { _label: string })[],
         lastLabel: "",
       };
     }
@@ -108,14 +109,42 @@ export function TimeSeriesChart({
       .map((a) => ({ ...a, _label: labelByAnomalyTs.get(a.timestamp.getTime()) }))
       .filter((a): a is Anomaly & { _label: string } => Boolean(a._label));
 
+    // op anomalies: filtrar y mapear igual
+    const visOps = opAnomalies.filter((a) => {
+      const t = a.timestamp.getTime();
+      return t >= firstTs && t <= lastTs;
+    });
+    const opLabelByTs = new Map<number, string>();
+    if (points.length > 0) {
+      for (const a of visOps) {
+        const t = a.timestamp.getTime();
+        let lo = 0;
+        let hi = points.length - 1;
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1;
+          if (points[mid].ts < t) lo = mid + 1;
+          else hi = mid;
+        }
+        const cand = points[lo];
+        const prev = lo > 0 ? points[lo - 1] : cand;
+        const nearest =
+          Math.abs(cand.ts - t) < Math.abs(prev.ts - t) ? cand : prev;
+        opLabelByTs.set(t, nearest.label);
+      }
+    }
+    const enrichedOps = visOps
+      .map((a) => ({ ...a, _label: opLabelByTs.get(a.timestamp.getTime()) }))
+      .filter((a): a is OpAnomaly & { _label: string } => Boolean(a._label));
+
     return {
       data: points,
       totalPoints: sliced.length,
       sampled: wasSampled,
       visibleAnomalies: enriched,
+      visibleOpAnomalies: enrichedOps,
       lastLabel: points[points.length - 1]?.label ?? "",
     };
-  }, [rows, anomalies, zoom]);
+  }, [rows, anomalies, opAnomalies, zoom]);
 
   return (
     <div className="card-rappi p-0 relative overflow-hidden">
