@@ -32,12 +32,24 @@ export function ChatBot({ rows, fileName }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const baseInputRef = useRef<string>("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, loading, open]);
+
+  // Auto-resize del textarea según el contenido (crece suavemente)
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    const max = 200; // px
+    const next = Math.min(ta.scrollHeight, max);
+    ta.style.height = `${next}px`;
+    ta.style.overflowY = ta.scrollHeight > max ? "auto" : "hidden";
+  }, [input, open]);
 
   // Inicializar SpeechRecognition (Web Speech API)
   useEffect(() => {
@@ -294,6 +306,7 @@ export function ChatBot({ rows, fileName }: Props) {
             )}
             <div className="flex items-end gap-2">
               <textarea
+                ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -305,7 +318,8 @@ export function ChatBot({ rows, fileName }: Props) {
                 placeholder={listening ? "Escuchando…" : "Escribe o dicta tu pregunta…"}
                 rows={1}
                 disabled={loading}
-                className="flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary max-h-32"
+                style={{ height: "40px", transition: "height 120ms ease-out" }}
+                className="flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary leading-relaxed"
               />
               {voiceSupported && (
                 <button
