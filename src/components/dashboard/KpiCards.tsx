@@ -73,12 +73,16 @@ export function KpiCards({ stats }: Props) {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
-      {cards.map((c) => (
-        <div key={c.label} className="card-rappi p-5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 stagger">
+      {cards.map((c, i) => (
+        <div
+          key={c.label}
+          className="card-rappi p-5"
+          style={{ animationDelay: `${i * 70}ms` }}
+        >
           <div className="flex items-start justify-between">
             <p className="text-sm text-muted-foreground font-medium">{c.label}</p>
-            <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center transition-transform duration-300 hover:scale-110 hover:rotate-3">
               <c.icon className={`w-5 h-5 ${c.accent}`} />
             </div>
           </div>

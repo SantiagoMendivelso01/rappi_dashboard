@@ -104,7 +104,7 @@ function Index() {
         )}
 
         {rows && !loading && (
-          <div className="space-y-5">
+          <div className="space-y-5 stagger">
             <div className="flex flex-col xl:flex-row xl:items-start gap-3">
               <div className="flex-1 min-w-0">
                 <FilterBar
@@ -135,7 +135,7 @@ function Index() {
 
             <DataTable daily={daily} />
 
-            <p className="text-center text-xs text-muted-foreground py-6">
+            <p className="text-center text-xs text-muted-foreground py-6 animate-fade-in-soft">
               Procesado 100% en tu navegador · Sin envío de datos
             </p>
           </div>

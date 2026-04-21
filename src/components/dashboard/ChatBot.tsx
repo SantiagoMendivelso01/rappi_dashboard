@@ -172,7 +172,7 @@ export function ChatBot({ rows, fileName }: Props) {
         <button
           onClick={() => setOpen(true)}
           aria-label="Abrir asistente"
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-primary text-primary-foreground rounded-full shadow-2xl hover:scale-105 transition-transform px-5 py-3.5 font-semibold"
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-primary text-primary-foreground rounded-full shadow-2xl hover:scale-105 transition-transform px-5 py-3.5 font-semibold animate-float"
           style={{
             boxShadow: "0 12px 32px -8px oklch(0.65 0.22 30 / 0.45)",
           }}
@@ -186,7 +186,7 @@ export function ChatBot({ rows, fileName }: Props) {
       {/* Panel del chat */}
       {open && (
         <div
-          className="fixed bottom-6 right-6 z-40 w-[min(420px,calc(100vw-2rem))] h-[min(620px,calc(100vh-3rem))] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+          className="fixed bottom-6 right-6 z-40 w-[min(420px,calc(100vw-2rem))] h-[min(620px,calc(100vh-3rem))] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-pop"
           style={{ boxShadow: "0 24px 48px -12px oklch(0.2 0.02 30 / 0.35)" }}
         >
           {/* Header */}
