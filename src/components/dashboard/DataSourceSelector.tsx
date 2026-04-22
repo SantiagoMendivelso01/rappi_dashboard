@@ -38,12 +38,12 @@ export function DataSourceSelector({ onFile, loading }: Props) {
   const processDirtyFile = useCallback(
     async (file: File) => {
       setError(null);
-      if (!file.name.toLowerCase().endsWith(".csv")) {
-        setError("El archivo debe tener extensión .csv");
+      if (!file.name.toLowerCase().endsWith(".zip")) {
+        setError("El archivo debe tener extensión .zip");
         return;
       }
       setProcessing(true);
-      setProgressMsg("Subiendo archivo al servicio de procesamiento...");
+      setProgressMsg("Subiendo archivo ZIP al servicio de procesamiento...");
       try {
         const formData = new FormData();
         formData.append("file", file);
@@ -65,7 +65,7 @@ export function DataSourceSelector({ onFile, loading }: Props) {
           throw new Error("El servicio devolvió un archivo vacío.");
         }
 
-        const cleanName = file.name.replace(/\.csv$/i, "_clean.csv");
+        const cleanName = file.name.replace(/\.zip$/i, "_clean.csv");
         onFile(text, cleanName);
       } catch (e) {
         setError(
