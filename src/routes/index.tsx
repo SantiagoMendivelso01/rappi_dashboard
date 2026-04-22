@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { TopBar } from "@/components/dashboard/TopBar";
-import { FileDropzone } from "@/components/dashboard/FileDropzone";
+import { DataSourceSelector } from "@/components/dashboard/DataSourceSelector";
 import { Skeleton } from "@/components/dashboard/Skeleton";
 import { KpiCards } from "@/components/dashboard/KpiCards";
 import { FilterBar } from "@/components/dashboard/FilterBar";
