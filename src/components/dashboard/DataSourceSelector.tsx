@@ -239,23 +239,48 @@ export function DataSourceSelector({ onFile, loading }: Props) {
   const busy = loading || processing;
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-12">
+    <div className="relative mx-auto max-w-3xl px-6 py-16 overflow-hidden">
+      {/* Decorative background orb */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[40rem] h-[40rem] rounded-full opacity-20 blur-3xl"
+        style={{
+          background: `radial-gradient(circle, ${
+            isDirty ? "oklch(0.35 0.05 280)" : "var(--primary)"
+          } 0%, transparent 60%)`,
+        }}
+      />
+
       <button
         onClick={() => {
           setMode("choose");
           setError(null);
         }}
-        className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-1"
+        className="relative text-sm text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-1.5 group"
         disabled={busy}
       >
-        ← Cambiar tipo de datos
+        <ArrowRight className="w-3.5 h-3.5 rotate-180 transition-transform group-hover:-translate-x-1" />
+        Cambiar tipo de datos
       </button>
 
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-foreground">
+      <div className="relative text-center mb-10 animate-fade-up">
+        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 backdrop-blur px-4 py-1.5 text-xs font-semibold text-muted-foreground mb-4 shadow-sm">
+          {isDirty ? (
+            <>
+              <Wand2 className="w-3.5 h-3.5 text-primary" />
+              Procesamiento automático
+            </>
+          ) : (
+            <>
+              <ShieldCheck className="w-3.5 h-3.5 text-success" />
+              Carga directa
+            </>
+          )}
+        </div>
+        <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
           {isDirty ? "Sube tu archivo ZIP crudo" : "Carga tu CSV limpio"}
         </h2>
-        <p className="text-muted-foreground mt-2">
+        <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
           {isDirty
             ? "Lo enviaremos al servicio de procesamiento. Cuando devuelva el CSV limpio, se cargará automáticamente al dashboard."
             : "Sube un CSV con el historial de tiendas visibles para visualizar el dashboard completo."}
@@ -276,14 +301,30 @@ export function DataSourceSelector({ onFile, loading }: Props) {
           const f = e.dataTransfer.files?.[0];
           if (f) handle(f);
         }}
-        className={`card-rappi border-2 border-dashed transition-all p-12 text-center ${
-          busy ? "cursor-not-allowed opacity-70" : "cursor-pointer"
-        } ${drag ? "border-primary bg-accent" : "border-border"}`}
+        className={`relative rounded-3xl border-2 border-dashed transition-all p-14 text-center bg-card overflow-hidden ${
+          busy ? "cursor-not-allowed opacity-80" : "cursor-pointer hover:border-primary/60"
+        } ${drag ? "border-primary scale-[1.01]" : "border-border"}`}
+        style={{
+          boxShadow: drag
+            ? "0 20px 50px -20px oklch(0.645 0.218 32 / 0.35)"
+            : "0 4px 20px -8px oklch(0.2 0.02 30 / 0.10)",
+        }}
         onClick={() => {
           if (busy) return;
           document.getElementById("csv-input-source")?.click();
         }}
       >
+        {/* Subtle grid pattern */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              "linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+
         <input
           id="csv-input-source"
           type="file"
@@ -296,20 +337,32 @@ export function DataSourceSelector({ onFile, loading }: Props) {
             e.target.value = "";
           }}
         />
+
         <div
-          className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
-            isDirty ? "bg-accent" : "bg-primary/10"
+          className={`relative mx-auto w-20 h-20 rounded-2xl flex items-center justify-center mb-5 shadow-lg ${
+            drag ? "animate-pop" : "animate-float"
           }`}
+          style={{
+            background: isDirty
+              ? "linear-gradient(135deg, oklch(0.197 0.029 280), oklch(0.35 0.05 280))"
+              : "linear-gradient(135deg, var(--primary), var(--rappi-orange-light))",
+          }}
         >
           {processing ? (
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <Loader2 className="w-9 h-9 text-primary-foreground animate-spin" />
           ) : isDirty ? (
-            <Sparkles className="w-8 h-8 text-primary" />
+            <Wand2 className="w-9 h-9 text-primary-foreground" />
           ) : (
-            <Upload className="w-8 h-8 text-primary" />
+            <Upload className="w-9 h-9 text-primary-foreground" />
+          )}
+          {!processing && (
+            <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-card border-2 border-primary flex items-center justify-center">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            </span>
           )}
         </div>
-        <p className="text-lg font-semibold text-foreground">
+
+        <p className="relative text-xl font-bold text-foreground">
           {processing
             ? "Procesando..."
             : drag
@@ -318,14 +371,17 @@ export function DataSourceSelector({ onFile, loading }: Props) {
                 ? "Arrastra tu ZIP aquí"
                 : "Arrastra tu CSV aquí"}
         </p>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="relative text-sm text-muted-foreground mt-1.5">
           {processing ? progressMsg : "o haz clic para seleccionarlo"}
         </p>
 
         <button
           type="button"
           disabled={busy}
-          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-rappi-orange-light disabled:opacity-50"
+          className="relative mt-7 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-primary-foreground shadow-md transition-all hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
+          style={{
+            background: "linear-gradient(135deg, var(--primary), var(--rappi-orange-light))",
+          }}
         >
           {processing ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -337,15 +393,16 @@ export function DataSourceSelector({ onFile, loading }: Props) {
       </div>
 
       {error && (
-        <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive flex items-start gap-2">
+        <div className="relative mt-5 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive flex items-start gap-2.5 animate-fade-up">
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <span>{error}</span>
+          <span className="font-medium">{error}</span>
         </div>
       )}
 
-      <div className="mt-8 text-xs text-muted-foreground text-center">
+      <div className="relative mt-8 text-xs text-muted-foreground text-center leading-relaxed">
         {isDirty ? (
           <>
+            <ShieldCheck className="inline w-3.5 h-3.5 mr-1 text-success" />
             El procesamiento se hace en un servicio externo seguro.
             <br />
             El archivo limpio se carga directo al dashboard sin pasos adicionales.
@@ -353,7 +410,9 @@ export function DataSourceSelector({ onFile, loading }: Props) {
         ) : (
           <>
             Columnas esperadas:{" "}
-            <code className="font-mono">timestamp, visible_stores, date, hour, day_of_week...</code>
+            <code className="font-mono bg-accent text-accent-foreground px-1.5 py-0.5 rounded">
+              timestamp, visible_stores, date, hour, day_of_week...
+            </code>
           </>
         )}
       </div>
