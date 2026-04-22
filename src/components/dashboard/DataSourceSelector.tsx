@@ -183,7 +183,7 @@ export function DataSourceSelector({ onFile, loading }: Props) {
         <input
           id="csv-input-source"
           type="file"
-          accept=".csv,text/csv"
+          accept={isDirty ? ".zip,application/zip,application/x-zip-compressed" : ".csv,text/csv"}
           className="hidden"
           disabled={busy}
           onChange={(e) => {
