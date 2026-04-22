@@ -95,7 +95,7 @@ function Index() {
       />
 
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6">
-        {!rows && !loading && <FileDropzone onFile={handleFile} loading={loading} />}
+        {!rows && !loading && <DataSourceSelector onFile={handleFile} loading={loading} />}
 
         {error && !loading && (
           <div className="max-w-3xl mx-auto mt-6 rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
