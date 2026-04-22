@@ -1,5 +1,17 @@
 import { useCallback, useState } from "react";
-import { Upload, FileSpreadsheet, Sparkles, FileCheck2, Loader2, AlertCircle } from "lucide-react";
+import {
+  Upload,
+  FileSpreadsheet,
+  Sparkles,
+  FileCheck2,
+  Loader2,
+  AlertCircle,
+  ArrowRight,
+  Zap,
+  ShieldCheck,
+  Wand2,
+  Database,
+} from "lucide-react";
 
 type Mode = "choose" | "clean" | "dirty";
 
