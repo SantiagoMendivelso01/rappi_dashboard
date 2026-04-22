@@ -228,7 +228,7 @@ export function DataSourceSelector({ onFile, loading }: Props) {
           ) : (
             <FileSpreadsheet className="w-4 h-4" />
           )}
-          {processing ? "Procesando..." : isDirty ? "Subir y procesar" : "Cargar CSV"}
+          {processing ? "Procesando..." : isDirty ? "Subir ZIP y procesar" : "Cargar CSV"}
         </button>
       </div>
 
