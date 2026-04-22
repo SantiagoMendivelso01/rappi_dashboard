@@ -96,46 +96,138 @@ export function DataSourceSelector({ onFile, loading }: Props) {
   // ---------- Pantalla de elección ----------
   if (mode === "choose") {
     return (
-      <div className="mx-auto max-w-5xl px-6 py-12">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold text-foreground">¿Cómo están tus datos?</h2>
-          <p className="text-muted-foreground mt-2">
-            Elige el flujo según el estado de tu archivo CSV.
+      <div className="relative mx-auto max-w-6xl px-6 py-16 overflow-hidden">
+        {/* Decorative background orbs */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-24 -left-24 w-96 h-96 rounded-full opacity-30 blur-3xl"
+          style={{ background: "radial-gradient(circle, var(--primary) 0%, transparent 70%)" }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-32 -right-20 w-[28rem] h-[28rem] rounded-full opacity-20 blur-3xl"
+          style={{ background: "radial-gradient(circle, var(--rappi-orange-light) 0%, transparent 70%)" }}
+        />
+
+        <div className="relative text-center mb-12 animate-fade-up">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 backdrop-blur px-4 py-1.5 text-xs font-semibold text-muted-foreground mb-5 shadow-sm">
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
+            Comencemos a explorar tus datos
+          </div>
+          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">
+            ¿Cómo están tus <span className="shimmer-text">datos</span>?
+          </h2>
+          <p className="text-muted-foreground mt-3 max-w-xl mx-auto text-base">
+            Elige el flujo según el estado de tu archivo. Te llevamos al dashboard en segundos.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="relative grid grid-cols-1 md:grid-cols-2 gap-6 stagger">
+          {/* CLEAN */}
           <button
             onClick={() => setMode("clean")}
-            className="card-rappi p-8 text-left transition-all hover:border-primary hover:shadow-lg group"
+            className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:-translate-y-1 hover:shadow-2xl hover:border-primary/40"
+            style={{ boxShadow: "0 4px 20px -8px oklch(0.2 0.02 30 / 0.12)" }}
           >
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-              <FileCheck2 className="w-7 h-7 text-primary" />
+            <div
+              aria-hidden
+              className="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-2xl"
+              style={{ background: "radial-gradient(circle, var(--primary) 0%, transparent 70%)" }}
+            />
+
+            <div className="relative flex items-start justify-between mb-5">
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-md transition-transform group-hover:scale-110 group-hover:rotate-3"
+                style={{ background: "linear-gradient(135deg, var(--primary), var(--rappi-orange-light))" }}
+              >
+                <FileCheck2 className="w-8 h-8 text-primary-foreground" />
+              </div>
+              <span className="inline-flex items-center gap-1 rounded-full bg-success/10 text-success px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide">
+                <Zap className="w-3 h-3" /> Rápido
+              </span>
             </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">Datos limpios</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Ya tengo el CSV con las columnas <code className="font-mono text-xs">timestamp, visible_stores, date, hour...</code> listo para visualizar.
+
+            <h3 className="relative text-2xl font-extrabold text-foreground mb-2 tracking-tight">
+              Datos limpios
+            </h3>
+            <p className="relative text-sm text-muted-foreground mb-5 leading-relaxed">
+              Ya tengo el CSV con las columnas{" "}
+              <code className="font-mono text-[11px] bg-accent text-accent-foreground px-1.5 py-0.5 rounded">
+                timestamp, visible_stores, date, hour...
+              </code>{" "}
+              listo para visualizar.
             </p>
-            <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
-              Subir directo al dashboard →
+
+            <div className="relative flex items-center gap-2 text-sm text-muted-foreground mb-5">
+              <ShieldCheck className="w-4 h-4 text-success" />
+              <span>Carga directa, sin procesamiento adicional</span>
+            </div>
+
+            <span className="relative inline-flex items-center gap-2 text-sm font-bold text-primary group-hover:gap-3 transition-all">
+              Subir directo al dashboard
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </span>
           </button>
 
+          {/* DIRTY */}
           <button
             onClick={() => setMode("dirty")}
-            className="card-rappi p-8 text-left transition-all hover:border-primary hover:shadow-lg group"
+            className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:-translate-y-1 hover:shadow-2xl hover:border-primary/40"
+            style={{ boxShadow: "0 4px 20px -8px oklch(0.2 0.02 30 / 0.12)" }}
           >
-            <div className="w-14 h-14 rounded-2xl bg-accent flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
-              <Sparkles className="w-7 h-7 text-foreground group-hover:text-primary transition-colors" />
+            <div
+              aria-hidden
+              className="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-2xl"
+              style={{ background: "radial-gradient(circle, var(--rappi-orange-light) 0%, transparent 70%)" }}
+            />
+
+            <div className="relative flex items-start justify-between mb-5">
+              <div
+                className="relative w-16 h-16 rounded-2xl flex items-center justify-center shadow-md transition-transform group-hover:scale-110 group-hover:-rotate-3"
+                style={{ background: "linear-gradient(135deg, oklch(0.197 0.029 280), oklch(0.35 0.05 280))" }}
+              >
+                <Wand2 className="w-8 h-8 text-primary-foreground" />
+                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-primary animate-pulse" />
+              </div>
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide">
+                <Sparkles className="w-3 h-3" /> Auto
+              </span>
             </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">Datos sucios</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Tengo el ZIP crudo. Lo enviaré al servicio de procesamiento para que lo limpie y cargue el CSV resultante al dashboard automáticamente.
+
+            <h3 className="relative text-2xl font-extrabold text-foreground mb-2 tracking-tight">
+              Datos sucios
+            </h3>
+            <p className="relative text-sm text-muted-foreground mb-5 leading-relaxed">
+              Tengo el ZIP crudo. Lo enviaré al servicio de procesamiento para que lo limpie y cargue
+              el CSV resultante al dashboard automáticamente.
             </p>
-            <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
-              Procesar y cargar →
+
+            <div className="relative flex items-center gap-2 text-sm text-muted-foreground mb-5">
+              <Database className="w-4 h-4 text-primary" />
+              <span>Procesamiento automático en la nube</span>
+            </div>
+
+            <span className="relative inline-flex items-center gap-2 text-sm font-bold text-primary group-hover:gap-3 transition-all">
+              Procesar y cargar
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </span>
           </button>
+        </div>
+
+        {/* Footer hint */}
+        <div className="relative mt-10 flex items-center justify-center gap-6 text-xs text-muted-foreground animate-fade-in-soft">
+          <div className="flex items-center gap-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-60" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
+            </span>
+            Servicio activo
+          </div>
+          <div className="w-px h-3 bg-border" />
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Procesamiento seguro
+          </div>
         </div>
       </div>
     );
