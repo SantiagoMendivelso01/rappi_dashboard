@@ -38,12 +38,12 @@ export function DataSourceSelector({ onFile, loading }: Props) {
   const processDirtyFile = useCallback(
     async (file: File) => {
       setError(null);
-      if (!file.name.toLowerCase().endsWith(".csv")) {
-        setError("El archivo debe tener extensión .csv");
+      if (!file.name.toLowerCase().endsWith(".zip")) {
+        setError("El archivo debe tener extensión .zip");
         return;
       }
       setProcessing(true);
-      setProgressMsg("Subiendo archivo al servicio de procesamiento...");
+      setProgressMsg("Subiendo archivo ZIP al servicio de procesamiento...");
       try {
         const formData = new FormData();
         formData.append("file", file);
@@ -65,7 +65,7 @@ export function DataSourceSelector({ onFile, loading }: Props) {
           throw new Error("El servicio devolvió un archivo vacío.");
         }
 
-        const cleanName = file.name.replace(/\.csv$/i, "_clean.csv");
+        const cleanName = file.name.replace(/\.zip$/i, "_clean.csv");
         onFile(text, cleanName);
       } catch (e) {
         setError(
@@ -118,7 +118,7 @@ export function DataSourceSelector({ onFile, loading }: Props) {
             </div>
             <h3 className="text-xl font-bold text-foreground mb-2">Datos sucios</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Tengo el CSV crudo. Lo enviaré al servicio de procesamiento para que lo limpie y lo cargue al dashboard automáticamente.
+              Tengo el ZIP crudo. Lo enviaré al servicio de procesamiento para que lo limpie y cargue el CSV resultante al dashboard automáticamente.
             </p>
             <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
               Procesar y cargar →
@@ -149,11 +149,11 @@ export function DataSourceSelector({ onFile, loading }: Props) {
 
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-foreground">
-          {isDirty ? "Sube tu CSV crudo" : "Carga tu CSV limpio"}
+          {isDirty ? "Sube tu archivo ZIP crudo" : "Carga tu CSV limpio"}
         </h2>
         <p className="text-muted-foreground mt-2">
           {isDirty
-            ? "Lo enviaremos al servicio de procesamiento. Cuando devuelva el archivo limpio, se cargará automáticamente al dashboard."
+            ? "Lo enviaremos al servicio de procesamiento. Cuando devuelva el CSV limpio, se cargará automáticamente al dashboard."
             : "Sube un CSV con el historial de tiendas visibles para visualizar el dashboard completo."}
         </p>
       </div>
@@ -183,7 +183,7 @@ export function DataSourceSelector({ onFile, loading }: Props) {
         <input
           id="csv-input-source"
           type="file"
-          accept=".csv,text/csv"
+          accept={isDirty ? ".zip,application/zip,application/x-zip-compressed" : ".csv,text/csv"}
           className="hidden"
           disabled={busy}
           onChange={(e) => {
@@ -210,7 +210,9 @@ export function DataSourceSelector({ onFile, loading }: Props) {
             ? "Procesando..."
             : drag
               ? "Suelta el archivo aquí"
-              : "Arrastra tu CSV aquí"}
+              : isDirty
+                ? "Arrastra tu ZIP aquí"
+                : "Arrastra tu CSV aquí"}
         </p>
         <p className="text-sm text-muted-foreground mt-1">
           {processing ? progressMsg : "o haz clic para seleccionarlo"}
@@ -226,7 +228,7 @@ export function DataSourceSelector({ onFile, loading }: Props) {
           ) : (
             <FileSpreadsheet className="w-4 h-4" />
           )}
-          {processing ? "Procesando..." : isDirty ? "Subir y procesar" : "Cargar CSV"}
+          {processing ? "Procesando..." : isDirty ? "Subir ZIP y procesar" : "Cargar CSV"}
         </button>
       </div>
 
