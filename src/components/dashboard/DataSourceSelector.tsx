@@ -118,7 +118,7 @@ export function DataSourceSelector({ onFile, loading }: Props) {
             </div>
             <h3 className="text-xl font-bold text-foreground mb-2">Datos sucios</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Tengo el CSV crudo. Lo enviaré al servicio de procesamiento para que lo limpie y lo cargue al dashboard automáticamente.
+              Tengo el ZIP crudo. Lo enviaré al servicio de procesamiento para que lo limpie y cargue el CSV resultante al dashboard automáticamente.
             </p>
             <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
               Procesar y cargar →
