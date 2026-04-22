@@ -210,7 +210,9 @@ export function DataSourceSelector({ onFile, loading }: Props) {
             ? "Procesando..."
             : drag
               ? "Suelta el archivo aquí"
-              : "Arrastra tu CSV aquí"}
+              : isDirty
+                ? "Arrastra tu ZIP aquí"
+                : "Arrastra tu CSV aquí"}
         </p>
         <p className="text-sm text-muted-foreground mt-1">
           {processing ? progressMsg : "o haz clic para seleccionarlo"}
