@@ -177,10 +177,6 @@ Para eliminar la fricción de tener que ejecutar código localmente, el pipeline
 
 El objetivo era tener un dashboard funcional, visualmente profesional y desplegado públicamente dentro del tiempo disponible. Lovable permitió iterar sobre componentes React complejos con ciclos de feedback rápidos y generar un deploy sin configuración de infraestructura. El código es React + TypeScript estándar, completamente auditable.
 
-### Seguridad de la API key
-
-La API key de Anthropic no está en ningún archivo del repositorio ni se expone al cliente. Está almacenada como secreto en Supabase y se accede únicamente a través de una Edge Function del lado del servidor. Esto previene cualquier exposición accidental de credenciales.
-
 ### Por qué Claude Haiku para el chatbot
 
 Se evaluaron los tres modelos de la familia Anthropic. Haiku fue la elección por eficiencia: el chatbot solo necesita responder preguntas sobre estadísticas precalculadas que se entregan en el system prompt. No requiere razonamiento complejo. Haiku cumple esa tarea con menor latencia y costo significativamente más bajo que Sonnet u Opus.
@@ -218,7 +214,7 @@ Tabla con una fila por día que incluye: fecha, día de la semana, promedio de t
 Exporta un reporte del día seleccionado con KPIs del día, serie temporal, tabla de anomalías detectadas y comparativo vs promedio histórico. Generado con jsPDF + html2canvas directamente desde el navegador.
 
 ### Chatbot semántico
-Asistente conversacional conectado a la API de Anthropic que puede responder preguntas sobre cualquier dato, métrica o patrón visible en el dashboard.
+Asistente conversacional conectado a la API de Anthropic que puede responder preguntas (Tanto escritas como dictadas por voz) sobre cualquier dato, métrica o patrón visible en el dashboard.
 
 ---
 
