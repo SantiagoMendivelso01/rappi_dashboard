@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assest/logo.png" width="180" alt="Rappi Logo"/>
+  <img src="assets/logo.png" width="180" alt="Rappi Logo"/>
 </p>
 
 <h1 align="center">Rappi Makers 2026</h1>
