@@ -149,11 +149,11 @@ export function DataSourceSelector({ onFile, loading }: Props) {
 
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-foreground">
-          {isDirty ? "Sube tu CSV crudo" : "Carga tu CSV limpio"}
+          {isDirty ? "Sube tu archivo ZIP crudo" : "Carga tu CSV limpio"}
         </h2>
         <p className="text-muted-foreground mt-2">
           {isDirty
-            ? "Lo enviaremos al servicio de procesamiento. Cuando devuelva el archivo limpio, se cargará automáticamente al dashboard."
+            ? "Lo enviaremos al servicio de procesamiento. Cuando devuelva el CSV limpio, se cargará automáticamente al dashboard."
             : "Sube un CSV con el historial de tiendas visibles para visualizar el dashboard completo."}
         </p>
       </div>
